@@ -37,22 +37,22 @@ bash install/install.sh
 
 동작 내용:
 - `config/kanata.kbd`를 `~/.config/kanata/kanata.base.kbd`로 복사
-- Linux에서는 설치 중 키보드 디바이스 선택 프롬프트 제공
-  - 자동 감지
-  - 디바이스 이름 기준 선택
-  - `/dev/input/eventX` 경로 기준 선택
-- 선택 결과로 런타임 설정 `~/.config/kanata/kanata.kbd` 생성
+- `~/.config/kanata/kanata.base.kbd`를 `~/.config/kanata/kanata.kbd`로 복사
 - `kanata` 바이너리를 `~/.local/bin/kanata`에 배치
 - 자동시작 등록
   - Linux: `systemd --user` 서비스 등록/시작
   - macOS: `launchd` 에이전트 등록/로드
 - 마지막에 `--check`로 설정 유효성 검사
 
-Linux에서 설치 후 디바이스를 다시 선택:
+Linux에서 런타임 설정을 기본 파일로 되돌리기:
 
 ```bash
 bash install/select-device.sh
 ```
+
+동작 내용:
+- `~/.config/kanata/kanata.base.kbd`를 `~/.config/kanata/kanata.kbd`로 다시 복사
+- `--check`로 설정 유효성 검사
 
 ### Windows (PowerShell, 관리자 권한 권장)
 
