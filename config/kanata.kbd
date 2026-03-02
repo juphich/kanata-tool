@@ -1,0 +1,76 @@
+(defcfg
+  ;; defchordsv2 활성화를 위해 설정
+  concurrent-tap-hold yes
+)
+
+(defsrc
+  esc
+  grv  1  2  3  4  5  6  7  8  9  0  -     =     bspc
+  tab  q  w  e  r  t  y  u  i  o  p  lbrc  rbrc  \
+  caps a  s  d  f  g  h  j  k  l  ;  apo   ret
+  lsft z  x  c  v  b  n  m  ,  .  /  rsft
+  lctl lmet  lalt  spc  ralt
+)
+
+(defalias
+  on_layers  (layer-while-held l-switch)
+  on_funcs   (layer-while-held nav_and_function)
+
+  sw_base (layer-switch base)
+  sw_fn   (layer-switch nav_and_function)
+  sw_num  (layer-switch numpad)
+  sw_game (layer-switch game)
+
+  ectl    (tap-hold 180 180 esc lctl)
+  a       (tap-hold 180 180 a @on_funcs)
+  z       (tap-hold 180 180 z @on_layers)
+)
+
+(deflayer base
+  _
+  grv    1   2  3  4  5  6  7  8  9  0  -     =     bspc
+  tab    q   w  e  r  t  y  u  i  o  p  lbrc  rbrc  \
+  @ectl  @a  s  d  f  g  h  j  k  l  ;  apo   ret
+  lsft   @z  x  c  v  b  n  m  ,  .  /  rsft
+  lctl   lmet  lalt  spc  _
+)
+
+(deflayer l-switch
+  _
+  _  @sw_fn  @sw_num  @sw_game  _  _  _  _  _  _  _  _  _  _
+  _  _        _       _         _  _  _  _  _  _  _  _  _  _
+  _  _        _       _         _  _  _  _  _  _  _  _  _
+  _  _        _       _         _  _  _  _  _  _  _  _
+  _  _        _       _         _
+)
+
+(deflayer nav_and_function
+  _
+  _      f1  f2  f3  f4  f5  f6    f7    f8  f9     f10    f11  f12  _
+  _      _   _   _   _   _   _     _     _   _      prtsc  ins  del  _
+  @ectl  _   _   _   _   _   left  down  up  right  home   end  _
+  _      @z  _   _   _   _   _     _     _   pgup   pgdn   _
+  _      _   _   _   _
+)
+
+(deflayer numpad
+  _
+  _  _   _  _  _  _  _  nlck  _    _    _    _    _  _
+  _  _   _  _  _  _  _  kp7   kp8  kp9  kp+  kp-  _  _
+  _  _   _  _  _  _  _  kp4   kp5  kp6  kp*  kp/  _
+  _  @z  _  _  _  _  _  kp1   kp2  kp3  _    _
+  _  _   _  kp0  kp.
+)
+
+(deflayer game
+  _
+  _  _  _  _  _  _  _  _  _  _  _  _  _  _
+  _  _  _  _  _  _  _  _  _  _  _  _  _  _
+  _  _  _  _  _  _  _  _  _  _  _  _  _
+  _  _  _  _  _  _  _  _  _  _  _  _
+  _  _  _  _  _
+)
+
+(defchordsv2
+  (esc tab) @sw_base 75 first-release (base l-switch)
+)

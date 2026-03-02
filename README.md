@@ -1,93 +1,157 @@
-# kanata-settings
+# Kanata Install Project
 
+`kanata` 키보드 리매핑 설정을 Windows, macOS, Linux에서 공통으로 관리하고 설치/자동시작을 구성하는 프로젝트입니다.
 
+## Directory Structure
 
-## Getting started
-
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-* [Create](https://docs.gitlab.com/user/project/repository/web_editor/#create-a-file) or [upload](https://docs.gitlab.com/user/project/repository/web_editor/#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
-
+```text
+.
+├── README.md
+├── rule.md
+├── config/
+│   └── kanata.kbd
+├── install/
+│   ├── install.sh
+│   ├── install.ps1
+│   ├── select-device.sh
+│   └── uninstall.sh
+├── autostart/
+│   ├── linux/
+│   │   └── kanata.service
+│   ├── macos/
+│   │   └── com.kanata.plist
+│   └── windows/
+│       └── kanata-startup.ps1
+└── bin/
+    ├── kanata_linux_x64
+    └── kanata_linux_cmd_allowed_x64
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/jp-env/kanata-settings.git
-git branch -M main
-git push -uf origin main
+
+## Install
+
+### Linux / macOS
+
+```bash
+bash install/install.sh
 ```
 
-## Integrate with your tools
+동작 내용:
+- `config/kanata.kbd`를 `~/.config/kanata/kanata.base.kbd`로 복사
+- Linux에서는 설치 중 키보드 디바이스 선택 프롬프트 제공
+  - 자동 감지
+  - 디바이스 이름 기준 선택
+  - `/dev/input/eventX` 경로 기준 선택
+- 선택 결과로 런타임 설정 `~/.config/kanata/kanata.kbd` 생성
+- `kanata` 바이너리를 `~/.local/bin/kanata`에 배치
+- 자동시작 등록
+  - Linux: `systemd --user` 서비스 등록/시작
+  - macOS: `launchd` 에이전트 등록/로드
+- 마지막에 `--check`로 설정 유효성 검사
 
-* [Set up project integrations](https://gitlab.com/jp-env/kanata-settings/-/settings/integrations)
+Linux에서 설치 후 디바이스를 다시 선택:
 
-## Collaborate with your team
+```bash
+bash install/select-device.sh
+```
 
-* [Invite team members and collaborators](https://docs.gitlab.com/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/user/project/merge_requests/creating_merge_requests/)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/user/project/issues/managing_issues/#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+### Windows (PowerShell, 관리자 권한 권장)
 
-## Test and Deploy
+```powershell
+.\install\install.ps1
+```
 
-Use the built-in continuous integration in GitLab.
+`kanata.exe`가 PATH에 없으면 경로를 직접 전달:
 
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/topics/autodevops/requirements/)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ci/environments/protected_environments/)
+```powershell
+.\install\install.ps1 -KanataExePath "C:\path\to\kanata.exe"
+```
 
-***
+동작 내용:
+- `kanata.exe`를 `%LOCALAPPDATA%\kanata\bin\kanata.exe`에 복사
+- `config/kanata.kbd`를 `%APPDATA%\kanata\kanata.kbd`로 복사
+- `--check`로 설정 유효성 검사
 
-# Editing this README
+## Run Manually
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+### Linux / macOS
 
-## Suggestions for a good README
+```bash
+~/.local/bin/kanata --cfg ~/.config/kanata/kanata.kbd
+```
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+### Windows
 
-## Name
-Choose a self-explaining name for your project.
+```powershell
+"$env:LOCALAPPDATA\kanata\bin\kanata.exe" --cfg "$env:APPDATA\kanata\kanata.kbd"
+```
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+## Autostart
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+### Linux (systemd --user)
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+```bash
+systemctl --user status kanata
+systemctl --user restart kanata
+```
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+### macOS (launchd)
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+```bash
+launchctl unload ~/Library/LaunchAgents/com.kanata.plist
+launchctl load ~/Library/LaunchAgents/com.kanata.plist
+```
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+### Windows (Run 레지스트리 등록)
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+```powershell
+.\autostart\windows\kanata-startup.ps1
+```
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+## Uninstall (Linux / macOS)
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+```bash
+bash install/uninstall.sh
+```
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+제거 내용:
+- 자동시작 항목 제거 (`systemd` 또는 `launchd`)
+- `~/.local/bin/kanata` 삭제
+- `~/.config/kanata` 삭제
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+## Validation
 
-## License
-For open source projects, say how it is licensed.
+```bash
+~/.local/bin/kanata --cfg ~/.config/kanata/kanata.kbd --check
+```
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+Windows:
+
+```powershell
+"$env:LOCALAPPDATA\kanata\bin\kanata.exe" --cfg "$env:APPDATA\kanata\kanata.kbd" --check
+```
+
+## Platform Notes
+
+### Linux
+
+- `/dev/input/*` 접근 권한을 위해 `input` 그룹 추가가 필요할 수 있습니다.
+
+```bash
+sudo usermod -aG input $USER
+```
+
+- 그룹 변경 후 재로그인 필요
+
+### macOS
+
+- 시스템 설정에서 접근성(손쉬운 사용) 권한 허용 필요
+
+### Windows
+
+- 관리자 권한으로 실행 시 안정적인 동작
+
+## References
+
+- https://github.com/jtroo/kanata
+- https://github.com/jtroo/kanata/blob/main/docs/config.adoc
+- https://github.com/jtroo/kanata/releases
