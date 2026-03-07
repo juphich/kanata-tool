@@ -11,11 +11,14 @@ $InstallDir = Join-Path $env:LOCALAPPDATA "kanata"
 $BinDir = Join-Path $InstallDir "bin"
 $KanataExe = Join-Path $BinDir "kanata.exe"
 $ConfigDir = Join-Path $env:APPDATA "kanata"
-$ConfigDest = Join-Path $ConfigDir "kanata.kbd"
+$ConfigBase = Join-Path $ConfigDir "kanata.base.kbd"
+$ConfigRuntime = Join-Path $ConfigDir "kanata.kbd"
+$RunKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
+$RunValueName = "kanata"
 $KanataVersion = if ($env:KANATA_VERSION) { $env:KANATA_VERSION } else { "v1.8.1" }
 
 function Write-Log([string]$Message) {
-  Write-Host "[install] $Message"
+  Write-Host "[setup] $Message"
 }
 
 function Get-Arch {
@@ -100,12 +103,20 @@ if ($KanataExePath -and (Test-Path $KanataExePath)) {
   Download-KanataExe -Arch $arch -Destination $KanataExe
 }
 
-Copy-Item $ConfigSource $ConfigDest -Force
-Write-Log "Config installed to $ConfigDest"
+Copy-Item $ConfigSource $ConfigBase -Force
+Copy-Item $ConfigBase $ConfigRuntime -Force
+Write-Log "Config installed to $ConfigRuntime"
 
-& $KanataExe --cfg $ConfigDest --check
+& $KanataExe --cfg $ConfigRuntime --check
 if ($LASTEXITCODE -ne 0) {
   throw "Config validation failed."
 }
 
+$runCommand = "`"$KanataExe`" --cfg `"$ConfigRuntime`""
+Set-ItemProperty -Path $RunKey -Name $RunValueName -Value $runCommand
+Write-Log "Registered autostart in HKCU Run"
+
+Get-Process -Name "kanata" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+Start-Process -FilePath $KanataExe -ArgumentList @("--cfg", $ConfigRuntime) -WindowStyle Hidden
+Write-Log "Started kanata process"
 Write-Log "Config validation succeeded"

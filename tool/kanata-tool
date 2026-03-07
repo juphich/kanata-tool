@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+COMMANDS_DIR="${REPO_ROOT}/commands"
+
+usage() {
+  cat <<'EOF'
+Usage: kanata-tool <command>
+
+Commands:
+  setup      Install kanata binary/config and autostart
+  uninstall  Remove kanata binary/config and autostart
+  device     Reset runtime config from base config (Linux)
+  start      Start kanata service/agent
+  stop       Stop kanata service/agent
+EOF
+}
+
+if [[ $# -lt 1 ]]; then
+  usage
+  exit 1
+fi
+
+cmd="$1"
+shift || true
+
+case "$(uname -s)" in
+  Linux) PLATFORM="linux" ;;
+  Darwin) PLATFORM="macos" ;;
+  *)
+    printf '[kanata-tool] Unsupported OS: %s\n' "$(uname -s)" >&2
+    exit 1
+    ;;
+esac
+
+case "${cmd}" in
+  setup|uninstall|device|start|stop)
+    exec bash "${COMMANDS_DIR}/${PLATFORM}/${cmd}.sh" "$@"
+    ;;
+  -h|--help|help)
+    usage
+    ;;
+  *)
+    printf '[kanata-tool] Unknown command: %s\n' "${cmd}" >&2
+    usage >&2
+    exit 1
+    ;;
+esac

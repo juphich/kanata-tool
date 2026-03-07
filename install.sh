@@ -42,6 +42,9 @@ require_cmd bash
 
 TMP_DIR="$(mktemp -d)"
 ARCHIVE_PATH="${TMP_DIR}/kanata-settings.tar.gz"
+INSTALL_ROOT="${KANATA_TOOL_HOME:-${HOME}/.local/share/kanata-tools}"
+BIN_DIR="${HOME}/.local/bin"
+TOOL_BIN="${BIN_DIR}/kanata-tool"
 
 cleanup() {
   rm -rf "${TMP_DIR}"
@@ -56,16 +59,39 @@ tar -xzf "${ARCHIVE_PATH}" -C "${TMP_DIR}"
 
 REPO_DIR=""
 for d in "${TMP_DIR}"/*; do
-  if [ -d "$d" ] && [ -f "$d/install/install.sh" ]; then
+  if [ -d "$d" ] && [ -f "$d/tool/kanata-tool" ]; then
     REPO_DIR="$d"
     break
   fi
 done
 
 if [ -z "${REPO_DIR}" ]; then
-  log "Could not find install/install.sh in downloaded archive"
+  log "Could not find tool/kanata-tool in downloaded archive"
   exit 1
 fi
 
-log "Running installer"
-bash "${REPO_DIR}/install/install.sh" "$@"
+log "Installing tool files to ${INSTALL_ROOT}"
+mkdir -p "$(dirname "${INSTALL_ROOT}")"
+mkdir -p "${BIN_DIR}"
+rm -rf "${INSTALL_ROOT}"
+cp -R "${REPO_DIR}" "${INSTALL_ROOT}"
+chmod +x "${INSTALL_ROOT}/tool/kanata-tool"
+chmod +x "${INSTALL_ROOT}/commands/linux/"*.sh
+chmod +x "${INSTALL_ROOT}/commands/macos/"*.sh
+
+cat > "${TOOL_BIN}" <<EOF
+#!/bin/sh
+exec "${INSTALL_ROOT}/tool/kanata-tool" "\$@"
+EOF
+chmod +x "${TOOL_BIN}"
+
+log "Installed: ${TOOL_BIN}"
+case ":${PATH:-}:" in
+  *":${BIN_DIR}:"*) ;;
+  *)
+    log "Warning: ${BIN_DIR} is not in PATH."
+    log "Add this line to your shell profile:"
+    log "  export PATH=\"${BIN_DIR}:\$PATH\""
+    ;;
+esac
+log "Next step: kanata-tool setup"

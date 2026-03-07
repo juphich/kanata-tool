@@ -10,7 +10,7 @@ require_cmd() {
   fi
 }
 
-VERSION="${KANATA_VERSION:-v1.8.1}"
+VERSION="${KANATA_VERSION:-}"
 OUTPUT_DIR=""
 
 while [[ $# -gt 0 ]]; do
@@ -40,6 +40,15 @@ require_cmd curl
 require_cmd jq
 require_cmd unzip
 require_cmd mktemp
+
+if [[ -z "${VERSION}" ]]; then
+  VERSION="$(curl -fsSL "https://api.github.com/repos/jtroo/kanata/releases/latest" | jq -r '.tag_name')"
+  if [[ -z "${VERSION}" || "${VERSION}" == "null" ]]; then
+    log "Failed to resolve latest kanata release tag"
+    exit 1
+  fi
+  log "Resolved latest kanata version: ${VERSION}"
+fi
 
 API_URL="https://api.github.com/repos/jtroo/kanata/releases/tags/${VERSION}"
 TMP_DIR="$(mktemp -d)"

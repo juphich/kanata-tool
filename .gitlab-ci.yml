@@ -3,9 +3,6 @@ stages:
   - package
   - release
 
-variables:
-  KANATA_VERSION: "v1.8.1"
-
 default:
   interruptible: true
 
@@ -15,12 +12,34 @@ verify:
   before_script:
     - apk add --no-cache bash shellcheck
   script:
-    - shellcheck install/*.sh build/*.sh
-    - sh -n install/remote-install.sh
-    - bash -n build/fetch-kanata-binaries.sh
-    - bash -n install/install.sh
-    - bash -n install/uninstall.sh
-    - bash -n install/select-device.sh
+    - shellcheck install.sh fetch-kanata-binaries.sh commands/linux/*.sh commands/macos/*.sh tool/kanata-tool
+    - sh -n install.sh
+    - bash -n commands/linux/setup.sh
+    - bash -n commands/linux/uninstall.sh
+    - bash -n commands/linux/device.sh
+    - bash -n commands/linux/start.sh
+    - bash -n commands/linux/stop.sh
+    - bash -n commands/macos/setup.sh
+    - bash -n commands/macos/uninstall.sh
+    - bash -n commands/macos/device.sh
+    - bash -n commands/macos/start.sh
+    - bash -n commands/macos/stop.sh
+    - bash -n tool/kanata-tool
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+
+verify_windows:
+  stage: verify
+  image: mcr.microsoft.com/powershell:7.4-alpine-3.19
+  script:
+    - pwsh -NoProfile -Command '[System.Management.Automation.Language.Parser]::ParseFile("tool/kanata-tool.ps1",[ref]$null,[ref]$null) | Out-Null'
+    - pwsh -NoProfile -Command '[System.Management.Automation.Language.Parser]::ParseFile("commands/windows/setup.ps1",[ref]$null,[ref]$null) | Out-Null'
+    - pwsh -NoProfile -Command '[System.Management.Automation.Language.Parser]::ParseFile("commands/windows/uninstall.ps1",[ref]$null,[ref]$null) | Out-Null'
+    - pwsh -NoProfile -Command '[System.Management.Automation.Language.Parser]::ParseFile("commands/windows/device.ps1",[ref]$null,[ref]$null) | Out-Null'
+    - pwsh -NoProfile -Command '[System.Management.Automation.Language.Parser]::ParseFile("commands/windows/start.ps1",[ref]$null,[ref]$null) | Out-Null'
+    - pwsh -NoProfile -Command '[System.Management.Automation.Language.Parser]::ParseFile("commands/windows/stop.ps1",[ref]$null,[ref]$null) | Out-Null'
   rules:
     - if: $CI_COMMIT_TAG
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
@@ -30,49 +49,13 @@ package:
   stage: package
   image: alpine:3.20
   before_script:
-    - apk add --no-cache bash curl jq unzip zip tar coreutils
+    - apk add --no-cache git zip tar coreutils
   script:
     - test -n "${CI_COMMIT_TAG}"
-    - KANATA_VERSION="${KANATA_VERSION:-${CI_COMMIT_TAG}}" bash build/fetch-kanata-binaries.sh --output-dir "${CI_PROJECT_DIR}"
     - mkdir -p dist
     - git archive --format=tar.gz --prefix=kanata-settings-${CI_COMMIT_TAG}/ -o dist/kanata-settings-source-${CI_COMMIT_TAG}.tar.gz "${CI_COMMIT_TAG}"
     - git archive --format=zip --prefix=kanata-settings-${CI_COMMIT_TAG}/ -o dist/kanata-settings-source-${CI_COMMIT_TAG}.zip "${CI_COMMIT_TAG}"
-    - mkdir -p build-out
-    - |
-      make_bundle() {
-        platform="$1"
-        arch="$2"
-        ext="$3"
-        stage_dir="build-out/kanata-settings-${CI_COMMIT_TAG}-${platform}-${arch}"
-        mkdir -p "${stage_dir}"
-        cp -R build config install autostart README.md rule.md "${stage_dir}/"
-        case "${platform}" in
-          linux)
-            mkdir -p "${stage_dir}/bin/linux/${arch}"
-            cp "bin/linux/${arch}/kanata" "${stage_dir}/bin/linux/${arch}/kanata"
-            ;;
-          macos)
-            mkdir -p "${stage_dir}/bin/macos/${arch}"
-            cp "bin/macos/${arch}/kanata" "${stage_dir}/bin/macos/${arch}/kanata"
-            ;;
-          windows)
-            mkdir -p "${stage_dir}/bin/windows/${arch}"
-            cp "bin/windows/${arch}/kanata.exe" "${stage_dir}/bin/windows/${arch}/kanata.exe"
-            ;;
-        esac
-
-        if [ "${ext}" = "tar.gz" ]; then
-          tar -czf "dist/kanata-settings-${platform}-${arch}-${CI_COMMIT_TAG}.tar.gz" -C build-out "kanata-settings-${CI_COMMIT_TAG}-${platform}-${arch}"
-        else
-          (cd build-out && zip -qr "../dist/kanata-settings-${platform}-${arch}-${CI_COMMIT_TAG}.zip" "kanata-settings-${CI_COMMIT_TAG}-${platform}-${arch}")
-        fi
-      }
-      make_bundle linux x64 tar.gz
-      make_bundle macos x64 tar.gz
-      make_bundle macos arm64 tar.gz
-      make_bundle windows x64 zip
-      make_bundle windows arm64 zip
-    - sha256sum dist/* > dist/SHA256SUMS
+    - sha256sum dist/kanata-settings-source-${CI_COMMIT_TAG}.tar.gz dist/kanata-settings-source-${CI_COMMIT_TAG}.zip > dist/SHA256SUMS
   artifacts:
     name: "kanata-settings-${CI_COMMIT_TAG}"
     paths:
@@ -100,21 +83,6 @@ release:
           link_type: package
         - name: "kanata-settings-source-${CI_COMMIT_TAG}.zip"
           url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/kanata-settings-source-${CI_COMMIT_TAG}.zip?job=package"
-          link_type: package
-        - name: "kanata-settings-linux-x64-${CI_COMMIT_TAG}.tar.gz"
-          url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/kanata-settings-linux-x64-${CI_COMMIT_TAG}.tar.gz?job=package"
-          link_type: package
-        - name: "kanata-settings-macos-x64-${CI_COMMIT_TAG}.tar.gz"
-          url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/kanata-settings-macos-x64-${CI_COMMIT_TAG}.tar.gz?job=package"
-          link_type: package
-        - name: "kanata-settings-macos-arm64-${CI_COMMIT_TAG}.tar.gz"
-          url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/kanata-settings-macos-arm64-${CI_COMMIT_TAG}.tar.gz?job=package"
-          link_type: package
-        - name: "kanata-settings-windows-x64-${CI_COMMIT_TAG}.zip"
-          url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/kanata-settings-windows-x64-${CI_COMMIT_TAG}.zip?job=package"
-          link_type: package
-        - name: "kanata-settings-windows-arm64-${CI_COMMIT_TAG}.zip"
-          url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/kanata-settings-windows-arm64-${CI_COMMIT_TAG}.zip?job=package"
           link_type: package
         - name: "SHA256SUMS"
           url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/SHA256SUMS?job=package"

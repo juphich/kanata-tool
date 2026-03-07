@@ -7,23 +7,39 @@
 ```text
 .
 ├── README.md
+├── install.sh
 ├── rule.md
-├── build/
-│   └── fetch-kanata-binaries.sh
+├── fetch-kanata-binaries.sh
+├── commands/
+│   ├── linux/
+│   │   ├── setup.sh
+│   │   ├── uninstall.sh
+│   │   ├── device.sh
+│   │   ├── start.sh
+│   │   └── stop.sh
+│   ├── macos/
+│   │   ├── setup.sh
+│   │   ├── uninstall.sh
+│   │   ├── device.sh
+│   │   ├── start.sh
+│   │   └── stop.sh
+│   └── windows/
+│       ├── setup.ps1
+│       ├── uninstall.ps1
+│       ├── device.ps1
+│       ├── start.ps1
+│       └── stop.ps1
 ├── config/
 │   └── kanata.kbd
-├── install/
-│   ├── install.sh
-│   ├── install.ps1
-│   ├── select-device.sh
-│   └── uninstall.sh
 ├── autostart/
 │   ├── linux/
 │   │   └── kanata.service
-│   ├── macos/
-│   │   └── com.kanata.plist
-│   └── windows/
-│       └── kanata-startup.ps1
+│   └── macos/
+│       └── com.kanata.plist
+├── tool/
+│   ├── kanata-tool
+│   ├── kanata-tool.ps1
+│   └── kanata-tool.cmd
 └── bin/
     ├── linux/x64/kanata
     ├── macos/x64/kanata
@@ -39,73 +55,62 @@ kanata 바이너리는 `https://github.com/jtroo/kanata/releases`에서 플랫�
 로컬에서 바이너리 fetch:
 
 ```bash
-bash build/fetch-kanata-binaries.sh --version v1.8.1 --output-dir .
+bash fetch-kanata-binaries.sh --version v1.8.1 --output-dir .
 ```
 
 GitLab CI 동작:
 - `verify`: shellcheck + 문법 검사
-- `package`(tag 전용): kanata 바이너리 다운로드 후 소스/플랫폼 번들 생성
+- `package`(tag 전용): source archive(`tar.gz`, `zip`)와 `SHA256SUMS` 생성
 - `release`(tag 전용): Release 생성 + assets 링크 등록
 
-기본은 `KANATA_VERSION` 환경변수 또는 태그명을 사용합니다.
+`KANATA_VERSION`을 지정하면 해당 버전을 사용하고, 지정하지 않으면 빌드 시점의 GitHub `releases/latest`를 자동 감지합니다.
 
 ## Install
 
-### Linux / macOS
+### Install CLI Tool
 
 ```bash
-bash install/install.sh
+curl -fsSL https://gitlab.com/jp-env/kanata-settings/-/raw/main/install.sh | sh
 ```
 
-GitLab에서 바로 설치(`curl | sh`):
+설치 후 명령 (Linux/macOS):
 
 ```bash
-curl -fsSL https://gitlab.com/jp-env/kanata-settings/-/raw/main/install/remote-install.sh | sh
+kanata-tool setup
 ```
 
-특정 브랜치/태그 기준 설치:
+하위 명령:
 
 ```bash
-curl -fsSL https://gitlab.com/jp-env/kanata-settings/-/raw/main/install/remote-install.sh | KANATA_REF=v1.8.1 sh
+kanata-tool setup      # 설치 + 자동시작 등록 + 실행
+kanata-tool uninstall  # 제거
+kanata-tool device     # base config -> runtime config (Linux/Windows)
+kanata-tool start      # 서비스/프로세스 시작
+kanata-tool stop       # 서비스/프로세스 중지
 ```
 
-동작 내용:
-- `config/kanata.kbd`를 `~/.config/kanata/kanata.base.kbd`로 복사
-- `~/.config/kanata/kanata.base.kbd`를 `~/.config/kanata/kanata.kbd`로 복사
-- `kanata` 바이너리를 `~/.local/bin/kanata`에 배치
-  - 우선순위: `bin/linux|macos/<arch>/kanata` -> PATH -> GitHub release 자동 다운로드
-- 자동시작 등록
-  - Linux: `systemd --user` 서비스 등록/시작
-  - macOS: `launchd` 에이전트 등록/로드
-- 마지막에 `--check`로 설정 유효성 검사
-
-Linux에서 런타임 설정을 기본 파일로 되돌리기:
-
-```bash
-bash install/select-device.sh
-```
-
-동작 내용:
-- `~/.config/kanata/kanata.base.kbd`를 `~/.config/kanata/kanata.kbd`로 다시 복사
-- `--check`로 설정 유효성 검사
-
-### Windows (PowerShell, 관리자 권한 권장)
+### Windows
 
 ```powershell
-.\install\install.ps1
+.\tool\kanata-tool.cmd setup
 ```
 
-`kanata.exe`가 PATH에 없으면 경로를 직접 전달:
+또는 PowerShell 직접 실행:
 
 ```powershell
-.\install\install.ps1 -KanataExePath "C:\path\to\kanata.exe"
+.\tool\kanata-tool.ps1 setup
+.\tool\kanata-tool.ps1 uninstall
+.\tool\kanata-tool.ps1 device
+.\tool\kanata-tool.ps1 start
+.\tool\kanata-tool.ps1 stop
 ```
 
-동작 내용:
-- `kanata.exe`를 `%LOCALAPPDATA%\kanata\bin\kanata.exe`에 복사
-  - 우선순위: `bin/windows/<arch>/kanata.exe` -> PATH -> GitHub release 자동 다운로드
-- `config/kanata.kbd`를 `%APPDATA%\kanata\kanata.kbd`로 복사
-- `--check`로 설정 유효성 검사
+Windows `setup` 동작:
+- `kanata.exe` 설치: `bin/windows/<arch>/kanata.exe` -> PATH -> GitHub release 다운로드
+- `%APPDATA%\kanata\kanata.base.kbd` / `kanata.kbd` 설치
+- `--check` 검증
+- `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` 자동시작 등록
+- kanata 프로세스 즉시 실행
 
 ## Run Manually
 
@@ -137,16 +142,13 @@ launchctl unload ~/Library/LaunchAgents/com.kanata.plist
 launchctl load ~/Library/LaunchAgents/com.kanata.plist
 ```
 
-### Windows (Run 레지스트리 등록)
+### Windows
+- `kanata-tool start` / `kanata-tool stop`으로 제어
 
-```powershell
-.\autostart\windows\kanata-startup.ps1
-```
-
-## Uninstall (Linux / macOS)
+## Uninstall
 
 ```bash
-bash install/uninstall.sh
+kanata-tool uninstall
 ```
 
 제거 내용:
