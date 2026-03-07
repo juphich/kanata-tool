@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Shared paths for install artifacts and config files.
-KANATA_VERSION="v1.8.1"
+KANATA_VERSION="${KANATA_VERSION:-v1.8.1}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 CFG_SRC="${REPO_ROOT}/config/kanata.kbd"
@@ -11,25 +11,69 @@ KANATA_BIN="${KANATA_BIN_DIR}/kanata"
 CFG_DST_DIR="${HOME}/.config/kanata"
 CFG_BASE_DST="${CFG_DST_DIR}/kanata.base.kbd"
 CFG_DST="${CFG_DST_DIR}/kanata.kbd"
+FETCH_ATTEMPTED=0
 
 log() { printf '[install] %s\n' "$*"; }
 
+attempt_fetch_bundled_binaries() {
+  if [[ "${FETCH_ATTEMPTED}" -eq 1 ]]; then
+    return
+  fi
+  FETCH_ATTEMPTED=1
+
+  if [[ ! -x "${REPO_ROOT}/build/fetch-kanata-binaries.sh" ]]; then
+    return
+  fi
+
+  if ! command -v curl >/dev/null 2>&1 || ! command -v jq >/dev/null 2>&1 || ! command -v unzip >/dev/null 2>&1; then
+    log "Bundled binary missing and fetch requirements are not met (need: curl jq unzip)"
+    return
+  fi
+
+  log "Attempting to download bundled kanata binaries (${KANATA_VERSION})"
+  if bash "${REPO_ROOT}/build/fetch-kanata-binaries.sh" --version "${KANATA_VERSION}" --output-dir "${REPO_ROOT}"; then
+    log "Downloaded bundled binaries"
+  else
+    log "Failed to fetch bundled binaries"
+  fi
+}
+
 install_binary_linux() {
   # Linux binary resolution order:
-  # 1) Bundled x86_64 binary in this repo
-  # 2) Existing kanata from PATH
-  # 3) Fail and ask user to install manually
+  # 1) Bundled binary in this repo: bin/linux/<arch>/kanata
+  # 2) Legacy bundled x86_64 binary: bin/kanata_linux_x64
+  # 3) Existing kanata from PATH
+  # 4) Fail and ask user to build/fetch binaries
   local arch
+  local bundled
   arch="$(uname -m)"
   mkdir -p "${KANATA_BIN_DIR}"
 
-  if [[ "${arch}" == "x86_64" && -x "${REPO_ROOT}/bin/kanata_linux_x64" ]]; then
-    cp "${REPO_ROOT}/bin/kanata_linux_x64" "${KANATA_BIN}"
+  case "${arch}" in
+    x86_64) bundled="${REPO_ROOT}/bin/linux/x64/kanata" ;;
+    *)
+      bundled=""
+      ;;
+  esac
+
+  if [[ -n "${bundled}" && ! -x "${bundled}" ]]; then
+    attempt_fetch_bundled_binaries
+  fi
+
+  if [[ -n "${bundled}" && -x "${bundled}" ]]; then
+    cp "${bundled}" "${KANATA_BIN}"
     chmod +x "${KANATA_BIN}"
     log "Bundled Linux binary installed to ${KANATA_BIN}"
     return
   fi
 
+  if [[ "${arch}" == "x86_64" && -x "${REPO_ROOT}/bin/kanata_linux_x64" ]]; then
+    cp "${REPO_ROOT}/bin/kanata_linux_x64" "${KANATA_BIN}"
+    chmod +x "${KANATA_BIN}"
+    log "Legacy bundled Linux binary installed to ${KANATA_BIN}"
+    return
+  fi
+
   if command -v kanata >/dev/null 2>&1; then
     local existing
     existing="$(command -v kanata)"
@@ -39,14 +83,39 @@ install_binary_linux() {
     return
   fi
 
-  log "No compatible bundled binary found for arch=${arch}."
-  log "Install kanata manually, then rerun this script."
+  log "No compatible bundled binary found for Linux arch=${arch}."
+  log "Run build/fetch-kanata-binaries.sh or install kanata manually, then rerun this script."
   exit 1
 }
 
 install_binary_macos() {
-  # On macOS, this script only reuses an already-installed kanata from PATH.
+  # macOS binary resolution order:
+  # 1) Bundled binary in this repo: bin/macos/<arch>/kanata
+  # 2) Existing kanata from PATH
+  # 3) Fail and ask user to build/fetch binaries
+  local arch bundled
+  arch="$(uname -m)"
   mkdir -p "${KANATA_BIN_DIR}"
+
+  case "${arch}" in
+    x86_64) bundled="${REPO_ROOT}/bin/macos/x64/kanata" ;;
+    arm64) bundled="${REPO_ROOT}/bin/macos/arm64/kanata" ;;
+    *)
+      bundled=""
+      ;;
+  esac
+
+  if [[ -n "${bundled}" && ! -x "${bundled}" ]]; then
+    attempt_fetch_bundled_binaries
+  fi
+
+  if [[ -n "${bundled}" && -x "${bundled}" ]]; then
+    cp "${bundled}" "${KANATA_BIN}"
+    chmod +x "${KANATA_BIN}"
+    log "Bundled macOS binary installed to ${KANATA_BIN}"
+    return
+  fi
+
   if command -v kanata >/dev/null 2>&1; then
     local existing
     existing="$(command -v kanata)"
@@ -56,8 +125,8 @@ install_binary_macos() {
     return
   fi
 
-  log "kanata binary not found on macOS."
-  log "Install kanata (${KANATA_VERSION}) first, then rerun this script."
+  log "No compatible bundled binary found for macOS arch=${arch}."
+  log "Run build/fetch-kanata-binaries.sh or install kanata (${KANATA_VERSION}) first, then rerun this script."
   exit 1
 }
 
