@@ -15,12 +15,13 @@ FETCH_ATTEMPTED=0
 log() { printf '[setup] %s\n' "$*"; }
 
 attempt_fetch_bundled_binaries() {
+  local arch="$1"
   if [[ "${FETCH_ATTEMPTED}" -eq 1 ]]; then
     return
   fi
   FETCH_ATTEMPTED=1
 
-  if [[ ! -x "${REPO_ROOT}/fetch-kanata-binaries.sh" ]]; then
+  if [[ ! -f "${REPO_ROOT}/fetch-kanata-binaries.sh" ]]; then
     return
   fi
 
@@ -30,7 +31,7 @@ attempt_fetch_bundled_binaries() {
   fi
 
   log "Attempting to download bundled kanata binaries (${KANATA_VERSION})"
-  if bash "${REPO_ROOT}/fetch-kanata-binaries.sh" --version "${KANATA_VERSION}" --output-dir "${REPO_ROOT}"; then
+  if bash "${REPO_ROOT}/fetch-kanata-binaries.sh" --version "${KANATA_VERSION}" --output-dir "${REPO_ROOT}" --platform linux --arch "${arch}"; then
     log "Downloaded bundled binaries"
   else
     log "Failed to fetch bundled binaries"
@@ -38,19 +39,23 @@ attempt_fetch_bundled_binaries() {
 }
 
 install_binary_linux() {
-  local arch bundled
+  local arch bundled fetch_arch
   arch="$(uname -m)"
   mkdir -p "${KANATA_BIN_DIR}"
 
   case "${arch}" in
-    x86_64) bundled="${REPO_ROOT}/bin/linux/x64/kanata" ;;
+    x86_64)
+      bundled="${REPO_ROOT}/bin/linux/x64/kanata"
+      fetch_arch="x64"
+      ;;
     *)
       bundled=""
+      fetch_arch=""
       ;;
   esac
 
   if [[ -n "${bundled}" && ! -x "${bundled}" ]]; then
-    attempt_fetch_bundled_binaries
+    attempt_fetch_bundled_binaries "${fetch_arch}"
   fi
 
   if [[ -n "${bundled}" && -x "${bundled}" ]]; then

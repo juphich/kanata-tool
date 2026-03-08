@@ -12,6 +12,8 @@ require_cmd() {
 
 VERSION="${KANATA_VERSION:-}"
 OUTPUT_DIR=""
+PLATFORM=""
+ARCH=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -23,6 +25,14 @@ while [[ $# -gt 0 ]]; do
       OUTPUT_DIR="$2"
       shift 2
       ;;
+    --platform)
+      PLATFORM="$2"
+      shift 2
+      ;;
+    --arch)
+      ARCH="$2"
+      shift 2
+      ;;
     *)
       log "Unknown argument: $1"
       exit 1
@@ -31,7 +41,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+REPO_ROOT="${SCRIPT_DIR}"
 if [[ -z "${OUTPUT_DIR}" ]]; then
   OUTPUT_DIR="${REPO_ROOT}"
 fi
@@ -154,10 +164,39 @@ fetch_one() {
   log "Installed ${os}/${arch} binary -> ${dest}"
 }
 
-fetch_one linux x64 "${OUTPUT_DIR}/bin/linux/x64/kanata"
-fetch_one macos x64 "${OUTPUT_DIR}/bin/macos/x64/kanata"
-fetch_one macos arm64 "${OUTPUT_DIR}/bin/macos/arm64/kanata"
-fetch_one windows x64 "${OUTPUT_DIR}/bin/windows/x64/kanata.exe"
-fetch_one windows arm64 "${OUTPUT_DIR}/bin/windows/arm64/kanata.exe"
+if [[ -n "${PLATFORM}" || -n "${ARCH}" ]]; then
+  if [[ -z "${PLATFORM}" || -z "${ARCH}" ]]; then
+    log "Both --platform and --arch are required together"
+    exit 1
+  fi
+
+  case "${PLATFORM}/${ARCH}" in
+    linux/x64)
+      fetch_one linux x64 "${OUTPUT_DIR}/bin/linux/x64/kanata"
+      ;;
+    macos/x64)
+      fetch_one macos x64 "${OUTPUT_DIR}/bin/macos/x64/kanata"
+      ;;
+    macos/arm64)
+      fetch_one macos arm64 "${OUTPUT_DIR}/bin/macos/arm64/kanata"
+      ;;
+    windows/x64)
+      fetch_one windows x64 "${OUTPUT_DIR}/bin/windows/x64/kanata.exe"
+      ;;
+    windows/arm64)
+      fetch_one windows arm64 "${OUTPUT_DIR}/bin/windows/arm64/kanata.exe"
+      ;;
+    *)
+      log "Unsupported platform/arch: ${PLATFORM}/${ARCH}"
+      exit 1
+      ;;
+  esac
+else
+  fetch_one linux x64 "${OUTPUT_DIR}/bin/linux/x64/kanata"
+  fetch_one macos x64 "${OUTPUT_DIR}/bin/macos/x64/kanata"
+  fetch_one macos arm64 "${OUTPUT_DIR}/bin/macos/arm64/kanata"
+  fetch_one windows x64 "${OUTPUT_DIR}/bin/windows/x64/kanata.exe"
+  fetch_one windows arm64 "${OUTPUT_DIR}/bin/windows/arm64/kanata.exe"
+fi
 
 log "Done (version=${VERSION})"

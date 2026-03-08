@@ -1,6 +1,8 @@
 (defcfg
   ;; defchordsv2 활성화를 위해 설정
   concurrent-tap-hold yes
+  movemouse-inherit-accel-state yes   ;; 마우스 가속을 다른 키도 이어 받아서 처리
+  movemouse-smooth-diagonals yes      ;; 대각선 이동을 부드럽게 처리
 )
 
 (defsrc
@@ -16,14 +18,25 @@
   on_layers  (layer-while-held l-switch)
   on_funcs   (layer-while-held nav_and_function)
 
-  sw_base (layer-switch base)
-  sw_fn   (layer-switch nav_and_function)
-  sw_num  (layer-switch numpad)
-  sw_game (layer-switch game)
+  sw_base  (layer-switch base)
+  sw_fn    (layer-switch nav_and_function)
+  sw_num   (layer-switch numpad)
+  sw_game  (layer-switch game)
+  sw_mouse (layer-switch mouse)
 
   ectl    (tap-hold 180 180 esc lctl)
   a       (tap-hold 180 180 a @on_funcs)
   z       (tap-hold 180 180 z @on_layers)
+
+  ml      (movemouse-accel-left  10 500 1 2)
+  md      (movemouse-accel-down  10 500 1 2)
+  mu      (movemouse-accel-up    10 500 1 2)
+  mr      (movemouse-accel-right 10 500 1 2)
+
+  wl      (mwheel-left 50 120)
+  wd      (mwheel-down 50 120)
+  wu      (mwheel-up 50 120)
+  wr      (mwheel-right 50 120)
 )
 
 (deflayer base
@@ -37,11 +50,11 @@
 
 (deflayer l-switch
   _
-  _  @sw_fn  @sw_num  @sw_game  _  _  _  _  _  _  _  _  _  _
-  _  _        _       _         _  _  _  _  _  _  _  _  _  _
-  _  _        _       _         _  _  _  _  _  _  _  _  _
-  _  _        _       _         _  _  _  _  _  _  _  _
-  _  _        _       _         _
+  _  @sw_mouse @sw_fn  @sw_num  @sw_game  _  _  _  _  _  _  _  _  _
+  _  _         _       _         _        _  _  _  _  _  _  _  _  _
+  _  _         _       _         _        _  _  _  _  _  _  _  _
+  _  _         _       _         _        _  _  _  _  _  _  _
+  _  _         _       _         _
 )
 
 (deflayer nav_and_function
@@ -62,6 +75,15 @@
   _  _   _  kp0  kp.
 )
 
+(deflayer mouse
+  _
+  _  _    _    _    _  _  _  _     _     _     _  _  _  _
+  _  _    @mu  _    _  _  _  _     @wu   _     _  _  _  _
+  _  @ml  @md  @mr  _  _  _  @wl   @wd   @wr   _  _  _
+  _  _    _    _    _  _  _  mlft  mmid  mrgt  _  _
+  _  _    _    _    _
+)
+
 (deflayer game
   _
   _  _  _  _  _  _  _  _  _  _  _  _  _  _
@@ -72,5 +94,5 @@
 )
 
 (defchordsv2
-  (esc tab) @sw_base 75 first-release (base l-switch)
+  (grv 1) @sw_base 75 first-release (base l-switch)
 )
