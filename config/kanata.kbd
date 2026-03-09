@@ -77,10 +77,10 @@
 
 (deflayer mouse
   _
-  @grv  _    _    _    _  _  _  _     _     _     _  _  _  _
-  _     _    @mu  _    _  _  _  _     @wu   _     _  _  _  _
-  _     @ml  @md  @mr  _  _  _  @wl   @wd   @wr   _  _  _
-  _     _    _    _    _  _  _  mlft  mmid  mrgt  _  _
+  @grv  _    _    _    _  _  _  _      _     _     _  _  _  _
+  _     _    @mu  _    _  _  _  mback  @wu   mfwd  _  _  _  _
+  _     @ml  @md  @mr  _  _  _  @wl    @wd   @wr   _  _  _
+  _     _    _    _    _  _  _  mlft   mmid  mrgt  _  _
   _     _    _    _    _
 )
 
