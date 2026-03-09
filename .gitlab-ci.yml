@@ -32,7 +32,7 @@ verify:
 
 verify_windows:
   stage: verify
-  image: mcr.microsoft.com/powershell:7.4-alpine
+  image: mcr.microsoft.com/dotnet/sdk:latest
   script:
     - pwsh -NoProfile -Command '[System.Management.Automation.Language.Parser]::ParseFile("tool/kanata-tool.ps1",[ref]$null,[ref]$null) | Out-Null'
     - pwsh -NoProfile -Command '[System.Management.Automation.Language.Parser]::ParseFile("commands/windows/setup.ps1",[ref]$null,[ref]$null) | Out-Null'
