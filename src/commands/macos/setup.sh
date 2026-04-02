@@ -3,6 +3,7 @@ set -euo pipefail
 
 KANATA_VERSION="${KANATA_VERSION:-}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../../lib/paths.sh
 source "${SCRIPT_DIR}/../../lib/paths.sh"
 CFG_SRC="${KANATA_TOOL_CONFIG_DIR}/kanata.kbd"
 

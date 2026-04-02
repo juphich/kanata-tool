@@ -2,8 +2,11 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../../lib/paths.sh
 source "${SCRIPT_DIR}/../../lib/paths.sh"
+# shellcheck source=../../lib/keymap.sh
 source "${SCRIPT_DIR}/../../lib/keymap.sh"
+# shellcheck source=../../lib/linux-runtime.sh
 source "${SCRIPT_DIR}/../../lib/linux-runtime.sh"
 
 reload_if_running() {

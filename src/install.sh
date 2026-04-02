@@ -8,7 +8,7 @@ INIT_SCRIPT="${INSTALL_ROOT}/init.sh"
 MARKER="# added by kanata-tool installer"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PACKAGE_README="${SCRIPT_DIR}/README.md"
-INIT_SCRIPT_SOURCE='${HOME}/.local/share/kanata-tool/init.sh'
+INIT_SCRIPT_SOURCE="\${HOME}/.local/share/kanata-tool/init.sh"
 
 log() { printf '[install] %s\n' "$*"; }
 warn() { printf '[install] %s\n' "$*" >&2; }

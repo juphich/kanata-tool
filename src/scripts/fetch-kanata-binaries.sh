@@ -79,7 +79,7 @@ list_assets() {
 find_asset() {
   local os="$1"
   local arch="$2"
-  local assets patterns pat line name url
+  local assets patterns pat name url
   assets="$(list_assets)"
 
   case "${os}/${arch}" in
