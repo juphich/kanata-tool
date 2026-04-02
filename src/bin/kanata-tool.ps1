@@ -6,8 +6,12 @@ param(
 $ErrorActionPreference = "Stop"
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$RepoRoot = Resolve-Path (Join-Path $ScriptDir "..")
-$CommandsDir = Join-Path $RepoRoot "commands"
+$env:KANATA_TOOL_HOME = if ($env:KANATA_TOOL_HOME) {
+  $env:KANATA_TOOL_HOME
+} else {
+  Split-Path -Parent $ScriptDir
+}
+$CommandsDir = Join-Path $env:KANATA_TOOL_HOME "commands"
 $IsWindowsHost = [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::Windows)
 $IsMacHost = [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::OSX)
 $IsLinuxHost = [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::Linux)
@@ -43,6 +47,10 @@ if ($Command -notin @("setup", "uninstall", "device", "start", "stop")) {
 }
 
 if ($IsWindowsHost) {
+  if ($Command -eq "uninstall" -and $env:KANATA_TOOL_UNINSTALL_RUNTIME_ONLY -ne "1") {
+    & (Join-Path $env:KANATA_TOOL_HOME "install.ps1") -Uninstall
+    exit $LASTEXITCODE
+  }
   $WindowsScript = Join-Path (Join-Path $CommandsDir "windows") "$Command.ps1"
   if (-not (Test-Path $WindowsScript)) {
     throw "Command script not found: $WindowsScript"
@@ -55,10 +63,16 @@ $unixPlatform = if ($IsMacHost) { "macos" } elseif ($IsLinuxHost) { "linux" } el
 if (-not $unixPlatform) {
   throw "Unsupported platform."
 }
+$bash = if (Get-Command bash -ErrorAction SilentlyContinue) { "bash" } else { throw "bash not found" }
+$installScript = Join-Path $env:KANATA_TOOL_HOME "install.sh"
+if ($Command -eq "uninstall" -and $env:KANATA_TOOL_UNINSTALL_RUNTIME_ONLY -ne "1") {
+  & $bash $installScript "--uninstall"
+  exit $LASTEXITCODE
+}
 $UnixScript = Join-Path (Join-Path $CommandsDir $unixPlatform) "$Command.sh"
 if (-not (Test-Path $UnixScript)) {
   throw "Command script not found: $UnixScript"
 }
 
-bash $UnixScript @Rest
+& $bash $UnixScript @Rest
 exit $LASTEXITCODE

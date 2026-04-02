@@ -1,19 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-KANATA_BIN="${HOME}/.local/bin/kanata"
-CFG_DIR="${HOME}/.config/kanata"
-SYSTEMD_SERVICE="${HOME}/.config/systemd/user/kanata.service"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/../../lib/paths.sh"
 
 log() { printf '[uninstall] %s\n' "$*"; }
 
 if command -v systemctl >/dev/null 2>&1; then
   systemctl --user disable --now kanata.service >/dev/null 2>&1 || true
-  rm -f "${SYSTEMD_SERVICE}"
+  rm -f "${KANATA_SYSTEMD_SERVICE}"
   systemctl --user daemon-reload
   log "Removed systemd user service"
 fi
 
-rm -f "${KANATA_BIN}"
-rm -rf "${CFG_DIR}"
+rm -f "${KANATA_RUNTIME_BIN}"
+rm -rf "${KANATA_CONFIG_DIR}"
 log "Removed kanata binary and config"

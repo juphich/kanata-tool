@@ -4,17 +4,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$RepoRoot = Resolve-Path (Join-Path $ScriptDir "..")
-$ConfigSource = Join-Path $RepoRoot "config\kanata.kbd"
-$InstallDir = Join-Path $env:LOCALAPPDATA "kanata"
-$BinDir = Join-Path $InstallDir "bin"
-$KanataExe = Join-Path $BinDir "kanata.exe"
-$ConfigDir = Join-Path $env:APPDATA "kanata"
-$ConfigBase = Join-Path $ConfigDir "kanata.base.kbd"
-$ConfigRuntime = Join-Path $ConfigDir "kanata.kbd"
-$RunKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
-$RunValueName = "kanata"
+. (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "lib\paths.ps1")
+$ConfigSource = Join-Path $Script:KanataToolConfigDir "kanata.kbd"
 $KanataVersion = if ($env:KANATA_VERSION) { $env:KANATA_VERSION } else { "v1.8.1" }
 
 function Write-Log([string]$Message) {
@@ -84,39 +75,39 @@ if (-not (Test-Path $ConfigSource)) {
   throw "Missing config file: $ConfigSource"
 }
 
-New-Item -ItemType Directory -Path $BinDir -Force | Out-Null
-New-Item -ItemType Directory -Path $ConfigDir -Force | Out-Null
+New-Item -ItemType Directory -Path $Script:KanataRuntimeBinDir -Force | Out-Null
+New-Item -ItemType Directory -Path $Script:KanataConfigDir -Force | Out-Null
 $arch = Get-Arch
-$BundledExe = Join-Path $RepoRoot ("bin\windows\{0}\kanata.exe" -f $arch)
+$BundledExe = Join-Path $Script:KanataToolBundledBinDir ("windows\{0}\kanata.exe" -f $arch)
 
 if ($KanataExePath -and (Test-Path $KanataExePath)) {
-  Copy-Item $KanataExePath $KanataExe -Force
+  Copy-Item $KanataExePath $Script:KanataRuntimeBin -Force
   Write-Log "Copied kanata.exe from parameter path"
 } elseif (Test-Path $BundledExe) {
-  Copy-Item $BundledExe $KanataExe -Force
+  Copy-Item $BundledExe $Script:KanataRuntimeBin -Force
   Write-Log ("Copied bundled kanata.exe for {0}" -f $arch)
 } elseif (Get-Command kanata.exe -ErrorAction SilentlyContinue) {
   $existing = (Get-Command kanata.exe).Source
-  Copy-Item $existing $KanataExe -Force
+  Copy-Item $existing $Script:KanataRuntimeBin -Force
   Write-Log "Copied kanata.exe from PATH"
 } else {
-  Download-KanataExe -Arch $arch -Destination $KanataExe
+  Download-KanataExe -Arch $arch -Destination $Script:KanataRuntimeBin
 }
 
-Copy-Item $ConfigSource $ConfigBase -Force
-Copy-Item $ConfigBase $ConfigRuntime -Force
-Write-Log "Config installed to $ConfigRuntime"
+Copy-Item $ConfigSource $Script:KanataConfigBase -Force
+Copy-Item $Script:KanataConfigBase $Script:KanataConfigRuntime -Force
+Write-Log "Config installed to $Script:KanataConfigRuntime"
 
-& $KanataExe --cfg $ConfigRuntime --check
+& $Script:KanataRuntimeBin --cfg $Script:KanataConfigRuntime --check
 if ($LASTEXITCODE -ne 0) {
   throw "Config validation failed."
 }
 
-$runCommand = "`"$KanataExe`" --cfg `"$ConfigRuntime`""
-Set-ItemProperty -Path $RunKey -Name $RunValueName -Value $runCommand
+$runCommand = "`"$Script:KanataRuntimeBin`" --cfg `"$Script:KanataConfigRuntime`""
+Set-ItemProperty -Path $Script:KanataRunKey -Name $Script:KanataRunValueName -Value $runCommand
 Write-Log "Registered autostart in HKCU Run"
 
 Get-Process -Name "kanata" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-Start-Process -FilePath $KanataExe -ArgumentList @("--cfg", $ConfigRuntime) -WindowStyle Hidden
+Start-Process -FilePath $Script:KanataRuntimeBin -ArgumentList @("--cfg", $Script:KanataConfigRuntime) -WindowStyle Hidden
 Write-Log "Started kanata process"
 Write-Log "Config validation succeeded"

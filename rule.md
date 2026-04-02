@@ -1,124 +1,67 @@
-# Kanata Keyboard Remapping Dotfiles
+# Kanata Project Rules
 
-## Project Overview
+## 현재 구조
 
-[kanata](https://github.com/jtroo/kanata) 키보드 리매핑 도구의 설치 및 설정을 자동화하는 dotfiles 프로젝트입니다.
-크로스 플랫폼(Windows, macOS, Linux)에서 일관된 키보드 레이아웃을 유지하는 것이 목표입니다.
+실행 및 배포 기준 소스는 `src/` 아래에 둔다.
 
-## Repository Structure
-
-```
+```text
 .
-├── CLAUDE.md                    # 이 파일
 ├── README.md
-├── config/
-│   ├── kanata.kbd               # 메인 kanata 설정 (공통)
-│   └── layers/                  # 레이어별 설정 분할 (선택)
-├── install/
-│   ├── install.sh               # Linux/macOS 통합 설치 스크립트
-│   ├── install.ps1              # Windows 설치 스크립트 (PowerShell)
-│   └── uninstall.sh             # 제거 스크립트
-└── autostart/
-    ├── linux/
-    │   └── kanata.service       # systemd 서비스 유닛
-    ├── macos/
-    │   └── com.kanata.plist     # launchd plist
-    └── windows/
-        └── kanata-startup.ps1   # 시작프로그램 등록 스크립트
+├── dist/
+├── src/
+│   ├── install.sh
+│   ├── install.ps1
+│   ├── bin/
+│   ├── commands/
+│   ├── config/
+│   ├── autostart/
+│   ├── bundled-bin/
+│   ├── scripts/
+│   └── lib/
+├── .gitlab-ci.yml
+└── .codex/
 ```
 
-## Key Commands
+## 설치 규칙
 
-### 설치
+- POSIX 설치 경로는 `~/.local/bin`, `~/.local/share/kanata-tool`, `~/.config/kanata`를 사용한다.
+- Windows 설치 경로는 `%LOCALAPPDATA%\kanata-tool`, `%LOCALAPPDATA%\kanata\bin`, `%APPDATA%\kanata`를 사용한다.
+- PATH 설정은 shell/profile 또는 사용자 PATH에 자동 등록한다.
+- `kanata-tool uninstall`은 clean uninstall을 수행해야 한다.
 
-```bash
-# Linux / macOS
-bash install/install.sh
+## 명령어 구조
 
-# Windows (PowerShell, 관리자 권한)
-.\install\install.ps1
-```
+- 관리 CLI 엔트리포인트는 `src/bin/kanata-tool`, `src/bin/kanata-tool.ps1`, `src/bin/kanata-tool.cmd`다.
+- 실제 동작은 `src/commands/<platform>/` 아래 command별 파일로 분리한다.
+- 공통 경로 상수는 `src/lib/paths.sh`, `src/lib/paths.ps1`에서 관리한다.
 
-### kanata 수동 실행
+## 배포 규칙
 
-```bash
-# Linux / macOS
-kanata --cfg config/kanata.kbd
+- 배포 패키지는 `src/scripts/package.sh`로 생성한다.
+- 산출물은 `dist/kanata-tool-<version>.tar.gz`, `dist/kanata-tool-<version>.zip`, `dist/SHA256SUMS`다.
+- 공식 다운로드 채널은 GitLab Release asset link다.
+- release 파이프라인은 `x.y.z` 형식 태그 push에서만 동작한다.
 
-# Windows
-kanata.exe --cfg config\kanata.kbd
-```
+## 유지보수 규칙
 
-### 설정 검증
+- 설치 경로 변경 시 POSIX/Windows installer와 uninstall 로직을 함께 수정한다.
+- 새 명령을 추가할 때는 platform별 `src/commands`에 파일을 추가하고 dispatcher에서 연결한다.
+- 설정 변경 후 가능한 범위에서 `kanata --check` 또는 스크립트 문법 검사를 수행한다.
+- 루트에는 배포 기준 소스 대신 문서와 CI 설정만 둔다.
 
-```bash
-kanata --cfg config/kanata.kbd --check
-```
-
-### 자동 시작 등록 / 해제
-
-```bash
-# Linux (systemd)
-systemctl --user enable kanata
-systemctl --user start kanata
-
-# macOS (launchd)
-launchctl load ~/Library/LaunchAgents/com.kanata.plist
-
-# Windows (PowerShell)
-.\autostart\windows\kanata-startup.ps1
-```
-
-## Platform Notes
+## 플랫폼 메모
 
 ### Linux
 
-- **권한**: `/dev/input/*` 접근을 위해 `input` 그룹 추가 필요
-  ```bash
-  sudo usermod -aG input $USER
-  ```
-- **udev rule**: `99-kanata.rules` 를 `/etc/udev/rules.d/` 에 복사
-- **자동 시작**: systemd user service (`--user`) 사용
+- `/dev/input/*` 접근을 위해 `input` 그룹이 필요할 수 있다.
+- `systemctl --user`가 usable하지 않으면 autostart는 건너뛸 수 있다.
 
 ### macOS
 
-- **권한**: 시스템 환경설정 → 보안 및 개인 정보 → 손쉬운 사용에서 kanata 허용 필요
-- **자동 시작**: `~/Library/LaunchAgents/` 에 plist 배치 후 `launchctl load`
-- **Apple Silicon**: arm64 빌드 사용 확인
+- 접근성 권한 허용이 필요하다.
+- autostart는 `launchd` 기반이다.
 
 ### Windows
 
-- **권한**: 관리자 권한으로 실행 필요
-- **드라이버**: `kanata_winIOv2.exe` 사용 권장 (WinIO 드라이버 필요)
-- **자동 시작**: 작업 스케줄러 또는 시작 폴더(`shell:startup`) 등록
-
-## Config File Guidelines
-
-- `config/kanata.kbd` 는 플랫폼 공통 설정
-- 플랫폼별 분기가 필요한 경우 `defvar` 또는 별도 `.kbd` 파일로 분리
-- 레이어 구조:
-  - `base` — 기본 레이어
-  - `fn` — Fn 키 조합 레이어
-  - `nav` — 화살표/편집 레이어 (선택)
-
-## Development Guidelines
-
-- 설치 스크립트 수정 시 **반드시 3개 플랫폼 모두** 동일하게 반영
-- kanata 버전은 `install/install.sh` 상단 `KANATA_VERSION` 변수에서 중앙 관리
-- `.kbd` 설정 변경 후 `--check` 플래그로 구문 검증 후 커밋
-- 자동 시작 스크립트의 kanata 실행 경로는 설치 경로와 일치해야 함
-
-## Common Issues
-
-| 증상 | 원인 | 해결 |
-|------|------|------|
-| `permission denied /dev/input` | input 그룹 미등록 | `sudo usermod -aG input $USER` 후 재로그인 |
-| macOS 키 입력 무반응 | 손쉬운 사용 권한 미허용 | 시스템 설정에서 kanata 허용 |
-| Windows 실행 즉시 종료 | 관리자 권한 없음 | 관리자로 실행 또는 작업 스케줄러 등록 |
-| 설정 변경 후 미적용 | 서비스 재시작 필요 | `systemctl --user restart kanata` |
-
-## References
-
-- [kanata GitHub](https://github.com/jtroo/kanata)
-- [kanata 설정 문서](https://github.com/jtroo/kanata/blob/main/docs/config.adoc)
-- [kanata Releases](https://github.com/jtroo/kanata/releases)
+- 관리자 권한 실행이 더 안정적일 수 있다.
+- autostart는 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`을 사용한다.

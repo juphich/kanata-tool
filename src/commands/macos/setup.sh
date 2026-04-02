@@ -3,13 +3,8 @@ set -euo pipefail
 
 KANATA_VERSION="${KANATA_VERSION:-v1.8.1}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-CFG_SRC="${REPO_ROOT}/config/kanata.kbd"
-KANATA_BIN_DIR="${HOME}/.local/bin"
-KANATA_BIN="${KANATA_BIN_DIR}/kanata"
-CFG_DST_DIR="${HOME}/.config/kanata"
-CFG_BASE_DST="${CFG_DST_DIR}/kanata.base.kbd"
-CFG_DST="${CFG_DST_DIR}/kanata.kbd"
+source "${SCRIPT_DIR}/../../lib/paths.sh"
+CFG_SRC="${KANATA_TOOL_CONFIG_DIR}/kanata.kbd"
 FETCH_ATTEMPTED=0
 
 log() { printf '[setup] %s\n' "$*"; }
@@ -21,7 +16,7 @@ attempt_fetch_bundled_binaries() {
   fi
   FETCH_ATTEMPTED=1
 
-  if [[ ! -f "${REPO_ROOT}/fetch-kanata-binaries.sh" ]]; then
+  if [[ ! -f "${KANATA_TOOL_SCRIPTS_DIR}/fetch-kanata-binaries.sh" ]]; then
     return
   fi
 
@@ -31,7 +26,7 @@ attempt_fetch_bundled_binaries() {
   fi
 
   log "Attempting to download bundled kanata binaries (${KANATA_VERSION})"
-  if bash "${REPO_ROOT}/fetch-kanata-binaries.sh" --version "${KANATA_VERSION}" --output-dir "${REPO_ROOT}" --platform macos --arch "${arch}"; then
+  if bash "${KANATA_TOOL_SCRIPTS_DIR}/fetch-kanata-binaries.sh" --version "${KANATA_VERSION}" --output-dir "${KANATA_TOOL_HOME}" --platform macos --arch "${arch}"; then
     log "Downloaded bundled binaries"
   else
     log "Failed to fetch bundled binaries"
@@ -41,15 +36,15 @@ attempt_fetch_bundled_binaries() {
 install_binary_macos() {
   local arch bundled fetch_arch
   arch="$(uname -m)"
-  mkdir -p "${KANATA_BIN_DIR}"
+  mkdir -p "${KANATA_RUNTIME_BIN_DIR}"
 
   case "${arch}" in
     x86_64)
-      bundled="${REPO_ROOT}/bin/macos/x64/kanata"
+      bundled="${KANATA_TOOL_BUNDLED_BIN_DIR}/macos/x64/kanata"
       fetch_arch="x64"
       ;;
     arm64)
-      bundled="${REPO_ROOT}/bin/macos/arm64/kanata"
+      bundled="${KANATA_TOOL_BUNDLED_BIN_DIR}/macos/arm64/kanata"
       fetch_arch="arm64"
       ;;
     *)
@@ -63,17 +58,17 @@ install_binary_macos() {
   fi
 
   if [[ -n "${bundled}" && -x "${bundled}" ]]; then
-    cp "${bundled}" "${KANATA_BIN}"
-    chmod +x "${KANATA_BIN}"
-    log "Bundled macOS binary installed to ${KANATA_BIN}"
+    cp "${bundled}" "${KANATA_RUNTIME_BIN}"
+    chmod +x "${KANATA_RUNTIME_BIN}"
+    log "Bundled macOS binary installed to ${KANATA_RUNTIME_BIN}"
     return
   fi
 
   if command -v kanata >/dev/null 2>&1; then
     local existing
     existing="$(command -v kanata)"
-    cp "${existing}" "${KANATA_BIN}"
-    chmod +x "${KANATA_BIN}"
+    cp "${existing}" "${KANATA_RUNTIME_BIN}"
+    chmod +x "${KANATA_RUNTIME_BIN}"
     log "Copied existing kanata from ${existing}"
     return
   fi
@@ -84,20 +79,17 @@ install_binary_macos() {
 }
 
 install_config() {
-  mkdir -p "${CFG_DST_DIR}"
-  cp "${CFG_SRC}" "${CFG_BASE_DST}"
-  cp "${CFG_BASE_DST}" "${CFG_DST}"
-  log "Config installed to ${CFG_DST}"
+  mkdir -p "${KANATA_CONFIG_DIR}"
+  cp "${CFG_SRC}" "${KANATA_CONFIG_BASE}"
+  cp "${KANATA_CONFIG_BASE}" "${KANATA_CONFIG_RUNTIME}"
+  log "Config installed to ${KANATA_CONFIG_RUNTIME}"
 }
 
 install_launchagent() {
-  local agent_dir agent_file
-  agent_dir="${HOME}/Library/LaunchAgents"
-  agent_file="${agent_dir}/com.kanata.plist"
-  mkdir -p "${agent_dir}"
-  cp "${REPO_ROOT}/autostart/macos/com.kanata.plist" "${agent_file}"
-  launchctl unload "${agent_file}" >/dev/null 2>&1 || true
-  launchctl load "${agent_file}"
+  mkdir -p "${KANATA_LAUNCH_AGENTS_DIR}"
+  cp "${KANATA_TOOL_AUTOSTART_DIR}/macos/com.kanata.plist" "${KANATA_LAUNCH_AGENT}"
+  launchctl unload "${KANATA_LAUNCH_AGENT}" >/dev/null 2>&1 || true
+  launchctl load "${KANATA_LAUNCH_AGENT}"
   log "launchd agent loaded"
 }
 
@@ -116,7 +108,7 @@ main() {
   install_config
   install_launchagent
 
-  "${KANATA_BIN}" --cfg "${CFG_DST}" --check
+  "${KANATA_RUNTIME_BIN}" --cfg "${KANATA_CONFIG_RUNTIME}" --check
   log "Config validation succeeded"
 }
 
