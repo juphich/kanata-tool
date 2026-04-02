@@ -2,7 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=../../lib/paths.sh
+# shellcheck disable=SC1091
 source "${SCRIPT_DIR}/../../lib/paths.sh"
 
 log() { printf '[device] %s\n' "$*"; }

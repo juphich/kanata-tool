@@ -3,9 +3,9 @@ set -euo pipefail
 
 KANATA_VERSION="${KANATA_VERSION:-}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=../../lib/paths.sh
+# shellcheck disable=SC1091
 source "${SCRIPT_DIR}/../../lib/paths.sh"
-# shellcheck source=../../lib/linux-runtime.sh
+# shellcheck disable=SC1091
 source "${SCRIPT_DIR}/../../lib/linux-runtime.sh"
 CFG_SRC="${KANATA_TOOL_CONFIG_DIR}/kanata.kbd"
 
