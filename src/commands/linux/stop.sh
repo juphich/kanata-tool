@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-log() { printf '[kanata-tool] %s\n' "$*"; }
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/../../lib/linux-runtime.sh"
 
-if command -v systemctl >/dev/null 2>&1; then
+if linux_runtime_systemd_usable; then
   systemctl --user stop kanata.service
-  log "Stopped kanata.service"
+  linux_runtime_log "Stopped kanata.service"
 else
-  log "systemctl not found"
-  exit 1
+  linux_runtime_stop_manual
 fi

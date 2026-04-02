@@ -3,6 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/../../lib/paths.sh"
+source "${SCRIPT_DIR}/../../lib/linux-runtime.sh"
 
 log() { printf '[status] %s\n' "$*"; }
 
@@ -35,7 +36,7 @@ else
   log "runtime config installed: no"
 fi
 
-if command -v systemctl >/dev/null 2>&1; then
+if linux_runtime_systemd_usable; then
   if systemctl --user is-active --quiet kanata.service; then
     log "service running: yes"
   else
@@ -48,6 +49,10 @@ if command -v systemctl >/dev/null 2>&1; then
     log "autostart enabled: no"
   fi
 else
-  log "service running: unknown (systemctl not found)"
-  log "autostart enabled: unknown (systemctl not found)"
+  if linux_runtime_running; then
+    log "service running: yes (manual process)"
+  else
+    log "service running: no"
+  fi
+  log "autostart enabled: no (systemctl --user unavailable)"
 fi

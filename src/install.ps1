@@ -46,7 +46,6 @@ function Install-Tree {
   Copy-Item (Join-Path $ScriptDir "commands") $InstallRoot -Recurse -Force
   Copy-Item (Join-Path $ScriptDir "config") $InstallRoot -Recurse -Force
   Copy-Item (Join-Path $ScriptDir "autostart") $InstallRoot -Recurse -Force
-  Copy-Item (Join-Path $ScriptDir "bundled-bin") $InstallRoot -Recurse -Force
   Copy-Item (Join-Path $ScriptDir "scripts") $InstallRoot -Recurse -Force
   Copy-Item (Join-Path $ScriptDir "lib") $InstallRoot -Recurse -Force
   Copy-Item (Join-Path $ScriptDir "install.ps1") $InstallRoot -Force

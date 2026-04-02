@@ -6,7 +6,7 @@ $ErrorActionPreference = "Stop"
 
 . (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "lib\paths.ps1")
 $ConfigSource = Join-Path $Script:KanataToolConfigDir "kanata.kbd"
-$KanataVersion = if ($env:KANATA_VERSION) { $env:KANATA_VERSION } else { "v1.8.1" }
+$KanataVersion = if ($env:KANATA_VERSION) { $env:KANATA_VERSION } else { $null }
 
 function Write-Log([string]$Message) {
   Write-Host "[setup] $Message"
@@ -31,15 +31,34 @@ function Download-KanataExe {
     [Parameter(Mandatory = $true)][string]$Destination
   )
 
+  if (-not $KanataVersion) {
+    $latest = Invoke-RestMethod -Uri "https://api.github.com/repos/jtroo/kanata/releases/latest"
+    $KanataVersion = $latest.tag_name
+  }
+
   $apiUrl = "https://api.github.com/repos/jtroo/kanata/releases/tags/$KanataVersion"
   Write-Log "Downloading kanata release metadata: $KanataVersion"
   $release = Invoke-RestMethod -Uri $apiUrl
-  $asset = $release.assets |
-    Where-Object { $_.name -match "windows" -and $_.name -match $Arch -and $_.name -match "\.zip$" } |
-    Select-Object -First 1
+  if ($Arch -eq "x64") {
+    $asset = $release.assets |
+      Where-Object {
+        $_.name -match 'windows.*x64.*\.zip$' -or
+        $_.name -match '^kanata\.exe$' -or
+        $_.name -match '^kanata_winIOv2\.exe$' -or
+        $_.name -match '^kanata_wintercept_cmd_allowed\.exe$'
+      } |
+      Select-Object -First 1
+  } else {
+    $asset = $release.assets |
+      Where-Object {
+        $_.name -match 'windows.*arm64.*\.zip$' -or
+        $_.name -match 'arm64.*\.exe$'
+      } |
+      Select-Object -First 1
+  }
 
   if (-not $asset) {
-    throw "No windows/$Arch zip asset found for $KanataVersion"
+    throw "No windows/$Arch asset found for $KanataVersion"
   }
 
   $tmpRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("kanata-" + [guid]::NewGuid().ToString("N"))
@@ -49,20 +68,24 @@ function Download-KanataExe {
 
   try {
     Write-Log ("Downloading {0}" -f $asset.browser_download_url)
-    Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $zipPath
-    Expand-Archive -Path $zipPath -DestinationPath $extractDir -Force
+    if ($asset.name -match '\.zip$') {
+      Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $zipPath
+      Expand-Archive -Path $zipPath -DestinationPath $extractDir -Force
 
-    $preferred = Get-ChildItem -Path $extractDir -Recurse -File -Filter "kanata.exe" | Select-Object -First 1
-    if (-not $preferred) {
-      $preferred = Get-ChildItem -Path $extractDir -Recurse -File -Filter "kanata*.exe" |
-        Where-Object { $_.Name -notmatch "gui" } |
-        Select-Object -First 1
-    }
-    if (-not $preferred) {
-      throw "Could not find kanata executable in downloaded archive."
-    }
+      $preferred = Get-ChildItem -Path $extractDir -Recurse -File -Filter "kanata.exe" | Select-Object -First 1
+      if (-not $preferred) {
+        $preferred = Get-ChildItem -Path $extractDir -Recurse -File -Filter "kanata*.exe" |
+          Where-Object { $_.Name -notmatch "gui" } |
+          Select-Object -First 1
+      }
+      if (-not $preferred) {
+        throw "Could not find kanata executable in downloaded archive."
+      }
 
-    Copy-Item $preferred.FullName $Destination -Force
+      Copy-Item $preferred.FullName $Destination -Force
+    } else {
+      Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $Destination
+    }
     Write-Log ("Downloaded kanata.exe for {0}" -f $Arch)
   } finally {
     if (Test-Path $tmpRoot) {
@@ -78,18 +101,10 @@ if (-not (Test-Path $ConfigSource)) {
 New-Item -ItemType Directory -Path $Script:KanataRuntimeBinDir -Force | Out-Null
 New-Item -ItemType Directory -Path $Script:KanataConfigDir -Force | Out-Null
 $arch = Get-Arch
-$BundledExe = Join-Path $Script:KanataToolBundledBinDir ("windows\{0}\kanata.exe" -f $arch)
 
 if ($KanataExePath -and (Test-Path $KanataExePath)) {
   Copy-Item $KanataExePath $Script:KanataRuntimeBin -Force
   Write-Log "Copied kanata.exe from parameter path"
-} elseif (Test-Path $BundledExe) {
-  Copy-Item $BundledExe $Script:KanataRuntimeBin -Force
-  Write-Log ("Copied bundled kanata.exe for {0}" -f $arch)
-} elseif (Get-Command kanata.exe -ErrorAction SilentlyContinue) {
-  $existing = (Get-Command kanata.exe).Source
-  Copy-Item $existing $Script:KanataRuntimeBin -Force
-  Write-Log "Copied kanata.exe from PATH"
 } else {
   Download-KanataExe -Arch $arch -Destination $Script:KanataRuntimeBin
 }

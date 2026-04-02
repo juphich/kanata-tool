@@ -19,7 +19,7 @@ trap cleanup EXIT
 
 mkdir -p "${PKG_DIR}" "${DIST_DIR}"
 
-for item in autostart bin bundled-bin commands config lib scripts install.sh install.ps1; do
+for item in autostart bin commands config lib scripts install.sh install.ps1; do
   cp -R "${SRC_DIR}/${item}" "${PKG_DIR}/"
 done
 

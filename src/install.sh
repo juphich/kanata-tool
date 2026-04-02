@@ -8,7 +8,7 @@ INIT_SCRIPT="${INSTALL_ROOT}/init.sh"
 MARKER="# added by kanata-tool installer"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PACKAGE_README="${SCRIPT_DIR}/README.md"
-INIT_SCRIPT_SOURCE="${INIT_SCRIPT}"
+INIT_SCRIPT_SOURCE='${HOME}/.local/share/kanata-tool/init.sh'
 
 log() { printf '[install] %s\n' "$*"; }
 warn() { printf '[install] %s\n' "$*" >&2; }
@@ -64,7 +64,6 @@ install_tree() {
   cp -R "${SCRIPT_DIR}/autostart" "${INSTALL_ROOT}/"
   cp -R "${SCRIPT_DIR}/commands" "${INSTALL_ROOT}/"
   cp -R "${SCRIPT_DIR}/config" "${INSTALL_ROOT}/"
-  cp -R "${SCRIPT_DIR}/bundled-bin" "${INSTALL_ROOT}/"
   cp -R "${SCRIPT_DIR}/scripts" "${INSTALL_ROOT}/"
   cp -R "${SCRIPT_DIR}/lib" "${INSTALL_ROOT}/"
   cp "${SCRIPT_DIR}/bin/kanata-tool" "${INSTALL_ROOT}/bin/kanata-tool"

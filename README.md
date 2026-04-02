@@ -17,7 +17,6 @@
 │   ├── commands/
 │   ├── config/
 │   ├── autostart/
-│   ├── bundled-bin/
 │   ├── scripts/
 │   └── lib/
 ├── .gitlab-ci.yml
@@ -43,6 +42,7 @@ source ~/.zshrc   # 또는 ~/.bashrc, ~/.profile
 
 - `~/.local/share/kanata-tool`에 관리 CLI와 자산 설치
 - `~/.local/bin/kanata-tool` wrapper 생성
+- setup 단계에서 `kanata` 바이너리를 네트워크로 다운로드
 - shell profile에 PATH 초기화 라인 추가
 - `kanata-tool setup` 자동 실행
 
@@ -60,6 +60,7 @@ Windows 설치 스크립트는 다음을 수행합니다.
 
 - `%LOCALAPPDATA%\kanata-tool`에 관리 CLI와 자산 설치
 - `%LOCALAPPDATA%\kanata-tool\bin`을 사용자 PATH에 추가
+- setup 단계에서 `kanata.exe`를 네트워크로 다운로드
 - `kanata-tool setup` 자동 실행
 
 ## 명령어
@@ -142,7 +143,7 @@ clean uninstall 범위:
 번들 바이너리 fetch:
 
 ```bash
-bash src/scripts/fetch-kanata-binaries.sh --version v1.8.1 --output-dir src
+bash src/scripts/fetch-kanata-binaries.sh --version v1.8.1 --platform linux --arch x64 --destination /tmp/kanata
 ```
 
 배포 패키지 생성:
@@ -164,6 +165,7 @@ bash src/scripts/package.sh 1.2.3
 - `release`: `dist` 산출물을 GitLab Release asset link로 등록
 
 공식 다운로드 URL은 GitLab Release asset link를 기준으로 합니다.
+설치 시 `kanata` 실행 파일 다운로드를 위해 네트워크가 필요합니다.
 
 ## 플랫폼 메모
 

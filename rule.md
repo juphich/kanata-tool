@@ -15,7 +15,6 @@
 │   ├── commands/
 │   ├── config/
 │   ├── autostart/
-│   ├── bundled-bin/
 │   ├── scripts/
 │   └── lib/
 ├── .gitlab-ci.yml
@@ -41,6 +40,7 @@
 - 산출물은 `dist/kanata-tool-<version>.tar.gz`, `dist/kanata-tool-<version>.zip`, `dist/SHA256SUMS`다.
 - 공식 다운로드 채널은 GitLab Release asset link다.
 - release 파이프라인은 `x.y.z` 형식 태그 push에서만 동작한다.
+- 설치 시 `kanata` 실행 파일은 네트워크로 다운로드한다.
 
 ## 유지보수 규칙
 

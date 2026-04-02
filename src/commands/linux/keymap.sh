@@ -4,14 +4,10 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/../../lib/paths.sh"
 source "${SCRIPT_DIR}/../../lib/keymap.sh"
+source "${SCRIPT_DIR}/../../lib/linux-runtime.sh"
 
 reload_if_running() {
-  if ! command -v systemctl >/dev/null 2>&1; then
-    keymap_log "systemctl not found; keymap updated without reload"
-    return
-  fi
-
-  if systemctl --user is-active --quiet kanata.service; then
+  if linux_runtime_systemd_usable && systemctl --user is-active --quiet kanata.service; then
     if systemctl --user restart kanata.service; then
       keymap_log "Reloaded kanata.service"
       return
@@ -20,7 +16,14 @@ reload_if_running() {
     return
   fi
 
-  keymap_log "kanata.service is not running; keymap updated only"
+  if linux_runtime_running; then
+    linux_runtime_stop_manual
+    linux_runtime_start_manual
+    keymap_log "Reloaded kanata process"
+    return
+  fi
+
+  keymap_log "kanata is not running; keymap updated only"
 }
 
 main() {

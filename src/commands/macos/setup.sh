@@ -1,81 +1,58 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-KANATA_VERSION="${KANATA_VERSION:-v1.8.1}"
+KANATA_VERSION="${KANATA_VERSION:-}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/../../lib/paths.sh"
 CFG_SRC="${KANATA_TOOL_CONFIG_DIR}/kanata.kbd"
-FETCH_ATTEMPTED=0
 
 log() { printf '[setup] %s\n' "$*"; }
 
-attempt_fetch_bundled_binaries() {
+download_kanata_binary() {
   local arch="$1"
-  if [[ "${FETCH_ATTEMPTED}" -eq 1 ]]; then
-    return
-  fi
-  FETCH_ATTEMPTED=1
-
   if [[ ! -f "${KANATA_TOOL_SCRIPTS_DIR}/fetch-kanata-binaries.sh" ]]; then
-    return
+    log "Missing fetch script: ${KANATA_TOOL_SCRIPTS_DIR}/fetch-kanata-binaries.sh"
+    exit 1
   fi
 
   if ! command -v curl >/dev/null 2>&1 || ! command -v jq >/dev/null 2>&1 || ! command -v unzip >/dev/null 2>&1; then
-    log "Bundled binary missing and fetch requirements are not met (need: curl jq unzip)"
-    return
+    log "Download requirements are not met (need: curl jq unzip)"
+    exit 1
   fi
 
-  log "Attempting to download bundled kanata binaries (${KANATA_VERSION})"
-  if bash "${KANATA_TOOL_SCRIPTS_DIR}/fetch-kanata-binaries.sh" --version "${KANATA_VERSION}" --output-dir "${KANATA_TOOL_HOME}" --platform macos --arch "${arch}"; then
-    log "Downloaded bundled binaries"
-  else
-    log "Failed to fetch bundled binaries"
-  fi
+  log "Downloading kanata binary (${KANATA_VERSION})"
+  bash "${KANATA_TOOL_SCRIPTS_DIR}/fetch-kanata-binaries.sh" \
+    --version "${KANATA_VERSION}" \
+    --platform macos \
+    --arch "${arch}" \
+    --destination "${KANATA_RUNTIME_BIN}"
 }
 
 install_binary_macos() {
-  local arch bundled fetch_arch
+  local arch fetch_arch
   arch="$(uname -m)"
   mkdir -p "${KANATA_RUNTIME_BIN_DIR}"
 
   case "${arch}" in
     x86_64)
-      bundled="${KANATA_TOOL_BUNDLED_BIN_DIR}/macos/x64/kanata"
       fetch_arch="x64"
       ;;
     arm64)
-      bundled="${KANATA_TOOL_BUNDLED_BIN_DIR}/macos/arm64/kanata"
       fetch_arch="arm64"
       ;;
     *)
-      bundled=""
       fetch_arch=""
       ;;
   esac
 
-  if [[ -n "${bundled}" && ! -x "${bundled}" ]]; then
-    attempt_fetch_bundled_binaries "${fetch_arch}"
+  if [[ -z "${fetch_arch}" ]]; then
+    log "Unsupported macOS arch=${arch}."
+    exit 1
   fi
 
-  if [[ -n "${bundled}" && -x "${bundled}" ]]; then
-    cp "${bundled}" "${KANATA_RUNTIME_BIN}"
-    chmod +x "${KANATA_RUNTIME_BIN}"
-    log "Bundled macOS binary installed to ${KANATA_RUNTIME_BIN}"
-    return
-  fi
-
-  if command -v kanata >/dev/null 2>&1; then
-    local existing
-    existing="$(command -v kanata)"
-    cp "${existing}" "${KANATA_RUNTIME_BIN}"
-    chmod +x "${KANATA_RUNTIME_BIN}"
-    log "Copied existing kanata from ${existing}"
-    return
-  fi
-
-  log "No compatible bundled binary found for macOS arch=${arch}."
-  log "Run fetch-kanata-binaries.sh or install kanata (${KANATA_VERSION}) first, then rerun this command."
-  exit 1
+  download_kanata_binary "${fetch_arch}"
+  chmod +x "${KANATA_RUNTIME_BIN}"
+  log "Installed macOS binary to ${KANATA_RUNTIME_BIN}"
 }
 
 install_config() {
