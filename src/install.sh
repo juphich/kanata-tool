@@ -109,6 +109,16 @@ register_profiles() {
   done
 }
 
+print_reload_hint() {
+  local profile
+  log "To use the updated PATH in the current shell, run one of:"
+  for profile in ${profiles}; do
+    [[ -f "${profile}" ]] || continue
+    printf '  source %s\n' "${profile}"
+  done
+  log "Or open a new terminal session and run: kanata-tool status"
+}
+
 main() {
   if [[ "${1:-}" == "--uninstall" ]]; then
     perform_uninstall
@@ -125,6 +135,7 @@ main() {
 
   [[ -f "${PACKAGE_README}" ]] && log "Installed from package in ${SCRIPT_DIR}"
   log "Installation completed"
+  print_reload_hint
 }
 
 main "$@"

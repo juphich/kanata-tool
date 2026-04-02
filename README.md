@@ -68,11 +68,37 @@ Windows 설치 스크립트는 다음을 수행합니다.
 kanata-tool setup
 kanata-tool uninstall
 kanata-tool device
+kanata-tool keymap
+kanata-tool status
 kanata-tool start
 kanata-tool stop
 ```
 
 `kanata-tool uninstall`은 clean uninstall을 수행합니다.
+
+`keymap` 사용 예시:
+
+```bash
+kanata-tool keymap
+kanata-tool keymap --init
+kanata-tool keymap --file ~/my-layout.kbd
+kanata-tool keymap --print
+```
+
+동작 방식:
+
+- 기본 제공 설정 파일은 수정하지 않습니다.
+- 실제 수정 대상은 runtime 설정 파일 `~/.config/kanata/kanata.kbd`입니다.
+- 변경 후 현재 kanata가 동작 중이면 reload/restart를 수행합니다.
+- 동작 중이 아니면 설정 파일만 갱신합니다.
+- `--print`는 현재 runtime keymap 내용을 stdout으로 출력합니다.
+
+`status` 명령은 아래 상태를 확인합니다.
+
+- 실행 파일 설치 여부
+- base/runtime config 존재 여부
+- 현재 실행 중 여부
+- 자동시작 등록 여부
 
 ## 설치 위치
 

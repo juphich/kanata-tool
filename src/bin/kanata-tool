@@ -15,6 +15,8 @@ Commands:
   setup      Install kanata binary/config and autostart
   uninstall  Remove kanata binary/config and autostart
   device     Reset runtime config from base config (Linux)
+  keymap     Edit or replace the runtime keymap
+  status     Show runtime and service status
   start      Start kanata service/agent
   stop       Stop kanata service/agent
 EOF
@@ -44,7 +46,7 @@ case "${cmd}" in
     fi
     exec bash "${KANATA_TOOL_HOME}/install.sh" --uninstall "$@"
     ;;
-  setup|device|start|stop)
+  setup|device|keymap|status|start|stop)
     exec bash "${COMMANDS_DIR}/${PLATFORM}/${cmd}.sh" "$@"
     ;;
   -h|--help|help)

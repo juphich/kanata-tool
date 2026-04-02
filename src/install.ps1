@@ -78,3 +78,5 @@ Add-PathEntry $BinDir
 $env:KANATA_TOOL_HOME = $InstallRoot
 & (Join-Path $BinDir "kanata-tool.ps1") setup
 Write-Log "Installation completed"
+Write-Log "To use the updated PATH in the current shell, open a new PowerShell or terminal session."
+Write-Log "After reopening the shell, run: kanata-tool status"

@@ -34,11 +34,13 @@ verify:
     - bash -n src/commands/linux/uninstall.sh
     - bash -n src/commands/linux/device.sh
     - bash -n src/commands/linux/start.sh
+    - bash -n src/commands/linux/status.sh
     - bash -n src/commands/linux/stop.sh
     - bash -n src/commands/macos/setup.sh
     - bash -n src/commands/macos/uninstall.sh
     - bash -n src/commands/macos/device.sh
     - bash -n src/commands/macos/start.sh
+    - bash -n src/commands/macos/status.sh
     - bash -n src/commands/macos/stop.sh
     - bash -n src/bin/kanata-tool
   rules:
@@ -53,10 +55,13 @@ verify_windows:
     - pwsh -NoProfile -Command '[System.Management.Automation.Language.Parser]::ParseFile("src/install.ps1",[ref]$null,[ref]$null) | Out-Null'
     - pwsh -NoProfile -Command '[System.Management.Automation.Language.Parser]::ParseFile("src/bin/kanata-tool.ps1",[ref]$null,[ref]$null) | Out-Null'
     - pwsh -NoProfile -Command '[System.Management.Automation.Language.Parser]::ParseFile("src/lib/paths.ps1",[ref]$null,[ref]$null) | Out-Null'
+    - pwsh -NoProfile -Command '[System.Management.Automation.Language.Parser]::ParseFile("src/lib/keymap.ps1",[ref]$null,[ref]$null) | Out-Null'
     - pwsh -NoProfile -Command '[System.Management.Automation.Language.Parser]::ParseFile("src/commands/windows/setup.ps1",[ref]$null,[ref]$null) | Out-Null'
     - pwsh -NoProfile -Command '[System.Management.Automation.Language.Parser]::ParseFile("src/commands/windows/uninstall.ps1",[ref]$null,[ref]$null) | Out-Null'
     - pwsh -NoProfile -Command '[System.Management.Automation.Language.Parser]::ParseFile("src/commands/windows/device.ps1",[ref]$null,[ref]$null) | Out-Null'
+    - pwsh -NoProfile -Command '[System.Management.Automation.Language.Parser]::ParseFile("src/commands/windows/keymap.ps1",[ref]$null,[ref]$null) | Out-Null'
     - pwsh -NoProfile -Command '[System.Management.Automation.Language.Parser]::ParseFile("src/commands/windows/start.ps1",[ref]$null,[ref]$null) | Out-Null'
+    - pwsh -NoProfile -Command '[System.Management.Automation.Language.Parser]::ParseFile("src/commands/windows/status.ps1",[ref]$null,[ref]$null) | Out-Null'
     - pwsh -NoProfile -Command '[System.Management.Automation.Language.Parser]::ParseFile("src/commands/windows/stop.ps1",[ref]$null,[ref]$null) | Out-Null'
   rules:
     - if: '$CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+$/'

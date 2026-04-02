@@ -23,6 +23,8 @@ function Show-Usage {
   Write-Host "  setup      Install kanata binary/config and autostart"
   Write-Host "  uninstall  Remove kanata binary/config and autostart"
   Write-Host "  device     Reset runtime config from base config"
+  Write-Host "  keymap     Edit or replace the runtime keymap"
+  Write-Host "  status     Show runtime and service status"
   Write-Host "  start      Start kanata service/agent/process"
   Write-Host "  stop       Stop kanata service/agent/process"
 }
@@ -40,7 +42,7 @@ if ($Command -in @("-h", "--help", "help")) {
   exit 0
 }
 
-if ($Command -notin @("setup", "uninstall", "device", "start", "stop")) {
+if ($Command -notin @("setup", "uninstall", "device", "keymap", "status", "start", "stop")) {
   Write-Error "Unknown command: $Command"
   Show-Usage
   exit 1
