@@ -36,8 +36,18 @@ else
   log "runtime config installed: no"
 fi
 
-if pgrep -x kanata >/dev/null 2>&1; then
-  log "service running: yes"
+service_pid=""
+service_exit=""
+if launchctl_out="$(launchctl list com.kanata 2>/dev/null)"; then
+  service_pid="$(printf '%s\n' "${launchctl_out}" | awk '/"PID"/ {gsub(/[^0-9]/,"",$NF); print $NF}')"
+  service_exit="$(printf '%s\n' "${launchctl_out}" | awk '/"LastExitStatus"/ {gsub(/[^0-9-]/,"",$NF); print $NF}')"
+fi
+
+if [[ -n "${service_pid}" && "${service_pid}" != "0" ]]; then
+  log "service running: yes (pid=${service_pid})"
+elif [[ -n "${service_exit}" && "${service_exit}" != "0" ]]; then
+  log "service running: no (crash loop — last exit status=${service_exit})"
+  log "check logs: /tmp/kanata.err.log"
 else
   log "service running: no"
 fi

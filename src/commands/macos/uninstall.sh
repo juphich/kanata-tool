@@ -14,3 +14,8 @@ log "Removed launchd agent"
 rm -f "${KANATA_RUNTIME_BIN}"
 rm -rf "${KANATA_CONFIG_DIR}"
 log "Removed kanata binary and config"
+
+if [[ -f /etc/sudoers.d/kanata ]]; then
+  sudo rm -f /etc/sudoers.d/kanata
+  log "Removed sudoers entry"
+fi

@@ -6,6 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/../../lib/paths.sh"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/../../lib/keymap.sh"
+KANATA_RUN_PREFIX="sudo"
 
 reload_if_running() {
   if pgrep -x kanata >/dev/null 2>&1; then

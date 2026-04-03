@@ -118,10 +118,22 @@ print_reload_hint() {
   log "Or open a new terminal session and run: kanata-tool status"
 }
 
+check_macos_prerequisites() {
+  if ! systemextensionsctl list 2>/dev/null | grep -q "Karabiner-DriverKit-VirtualHIDDevice"; then
+    error_exit "Karabiner-Elements is required but not detected.
+  Install it first: brew install --cask karabiner-elements
+  Then allow the system extension in: System Settings > Privacy & Security."
+  fi
+}
+
 main() {
   if [[ "${1:-}" == "--uninstall" ]]; then
     perform_uninstall
     exit 0
+  fi
+
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    check_macos_prerequisites
   fi
 
   install_tree

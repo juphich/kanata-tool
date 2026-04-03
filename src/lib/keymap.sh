@@ -38,7 +38,7 @@ keymap_validate_and_install() {
   KEYMAP_TMP_FILE="$(mktemp)"
   cp "${source_file}" "${KEYMAP_TMP_FILE}"
 
-  if ! "${KANATA_RUNTIME_BIN}" --cfg "${KEYMAP_TMP_FILE}" --check; then
+  if ! ${KANATA_RUN_PREFIX:-} "${KANATA_RUNTIME_BIN}" --cfg "${KEYMAP_TMP_FILE}" --check; then
     keymap_log "Validation failed. Keeping existing keymap."
     rm -f "${KEYMAP_TMP_FILE}"
     KEYMAP_TMP_FILE=""

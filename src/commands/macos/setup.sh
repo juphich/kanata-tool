@@ -9,15 +9,25 @@ CFG_SRC="${KANATA_TOOL_CONFIG_DIR}/kanata.kbd"
 
 log() { printf '[setup] %s\n' "$*"; }
 
+check_prerequisites() {
+  local missing=()
+  for cmd in curl jq unzip; do
+    if ! command -v "${cmd}" >/dev/null 2>&1; then
+      missing+=("${cmd}")
+    fi
+  done
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    log "Missing required tools: ${missing[*]}"
+    log "Please install them before running setup (e.g. brew install ${missing[*]})"
+    exit 1
+  fi
+
+}
+
 download_kanata_binary() {
   local arch="$1"
   if [[ ! -f "${KANATA_TOOL_SCRIPTS_DIR}/fetch-kanata-binaries.sh" ]]; then
     log "Missing fetch script: ${KANATA_TOOL_SCRIPTS_DIR}/fetch-kanata-binaries.sh"
-    exit 1
-  fi
-
-  if ! command -v curl >/dev/null 2>&1 || ! command -v jq >/dev/null 2>&1 || ! command -v unzip >/dev/null 2>&1; then
-    log "Download requirements are not met (need: curl jq unzip)"
     exit 1
   fi
 
@@ -63,6 +73,15 @@ install_config() {
   log "Config installed to ${KANATA_CONFIG_RUNTIME}"
 }
 
+install_sudoers() {
+  local user
+  user="$(id -un)"
+  printf '%s ALL=(ALL) NOPASSWD: %s\n' "${user}" "${KANATA_RUNTIME_BIN}" \
+    | sudo tee /etc/sudoers.d/kanata >/dev/null
+  sudo chmod 440 /etc/sudoers.d/kanata
+  log "sudoers entry installed: /etc/sudoers.d/kanata"
+}
+
 install_launchagent() {
   mkdir -p "${KANATA_LAUNCH_AGENTS_DIR}"
   cp "${KANATA_TOOL_AUTOSTART_DIR}/macos/com.kanata.plist" "${KANATA_LAUNCH_AGENT}"
@@ -77,6 +96,8 @@ main() {
     exit 1
   fi
 
+  check_prerequisites
+
   if [[ ! -f "${CFG_SRC}" ]]; then
     log "Missing config file: ${CFG_SRC}"
     exit 1
@@ -84,6 +105,7 @@ main() {
 
   install_binary_macos
   install_config
+  install_sudoers
   install_launchagent
 
   "${KANATA_RUNTIME_BIN}" --cfg "${KANATA_CONFIG_RUNTIME}" --check
