@@ -25,6 +25,7 @@
   sw_mouse (layer-switch mouse)
 
   ectl    (tap-hold 180 180 esc lctl)
+  esc     (tap-hold 180 180 esc @on_layers)
   grv     (tap-hold 180 180 grv @on_layers)
   a       (tap-hold 180 180 a @on_funcs)
 
@@ -40,7 +41,7 @@
 )
 
 (deflayer base
-  _
+  @esc
   @grv   1   2  3  4  5  6  7  8  9  0  -     =     bspc
   tab    q   w  e  r  t  y  u  i  o  p  lbrc  rbrc  \
   @ectl  @a  s  d  f  g  h  j  k  l  ;  apo   ret
@@ -58,7 +59,7 @@
 )
 
 (deflayer nav_and_function
-  _
+  @esc
   @grv   f1  f2  f3  f4  f5  f6    f7    f8  f9     f10    f11  f12  _
   _      _   _   _   _   _   _     _     _   _      prtsc  ins  del  _
   @ectl  _   _   _   _   _   left  down  up  right  home   end  _
@@ -67,7 +68,7 @@
 )
 
 (deflayer numpad
-  _
+  @esc
   @grv  _  _  _  _  _  _  nlck  _    _    _    _    _  _
   _     _  _  _  _  _  _  kp7   kp8  kp9  kp+  kp-  _  _
   _     _  _  _  _  _  _  kp4   kp5  kp6  kp*  kp/  _
@@ -76,7 +77,7 @@
 )
 
 (deflayer mouse
-  _
+  @esc
   @grv  _    _    _    _  _  _  _      _     _     _  _  _  _
   _     _    @mu  _    _  _  _  mbck   @wu   mfwd  _  _  _  _
   _     @ml  @md  @mr  _  _  _  @wl    @wd   @wr   _  _  _
@@ -94,5 +95,6 @@
 )
 
 (defchordsv2
+  (esc 1) @sw_base 75 first-release (base l-switch)
   (grv 1) @sw_base 75 first-release (base l-switch)
 )
