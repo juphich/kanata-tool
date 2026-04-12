@@ -22,7 +22,7 @@ function Show-Usage {
   Write-Host "Commands:"
   Write-Host "  setup      Install kanata binary/config and autostart"
   Write-Host "  uninstall  Remove kanata binary/config and autostart"
-  Write-Host "  device     Reset runtime config from base config"
+  Write-Host "  device     List and manage detected keyboards"
   Write-Host "  keymap     Edit or replace the runtime keymap"
   Write-Host "  status     Show runtime and service status"
   Write-Host "  start      Start kanata service/agent/process"

@@ -1,2 +1,3 @@
 dist/**/*
 .codex/**/*
+.agent/**/*

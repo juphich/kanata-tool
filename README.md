@@ -94,6 +94,29 @@ kanata-tool keymap --print
 - 동작 중이 아니면 설정 파일만 갱신합니다.
 - `--print`는 현재 runtime keymap 내용을 stdout으로 출력합니다.
 
+`device` 명령:
+
+```bash
+kanata-tool device --list
+kanata-tool device --config
+kanata-tool device --add /dev/input/event20
+kanata-tool device --remove /dev/input/event20
+```
+
+동작 방식:
+
+- 장치 목록은 `kanata --list` 결과를 기준으로 조회합니다.
+- 목록 출력 형식은 한 줄 요약형이며 `num. [v| ] "name"  vid:xxx  pid:xxx  id:/path` 형태입니다.
+- `[v]`는 현재 적용된 기기, `[ ]`는 아직 적용되지 않은 기기를 의미합니다.
+- `--add/--remove`는 목록에 출력된 `id` 값을 입력으로 받습니다.
+- `--config` 대화형 모드는 작업 선택 화면부터 시작합니다.
+- 대화형 메뉴는 `1.view devices / 2.add device / 3.delete device / 4.quit` 순서입니다.
+- `--config`에서 add/delete를 선택하면 목록의 `num` 값을 사용합니다.
+- `4.quit`을 선택할 때까지 대화형 메뉴를 반복합니다.
+- 등록 대상은 runtime keymap의 `defcfg`에 반영합니다.
+- 마지막 장치를 제거하면 device 관련 `defcfg` 항목은 완전히 삭제합니다.
+- Windows에서는 아직 지원하지 않습니다.
+
 `status` 명령은 아래 상태를 확인합니다.
 
 - 실행 파일 설치 여부

@@ -27,13 +27,24 @@ case "${detected_shell}" in
 esac
 
 remove_profile_entries() {
-  local profile tmp
+  local profile tmp trimmed_tmp
   for profile in ${profiles}; do
     [[ -f "${profile}" ]] || continue
     if grep -q "${MARKER}" "${profile}" 2>/dev/null; then
       tmp="$(mktemp)"
+      trimmed_tmp="$(mktemp)"
       grep -v "${MARKER}" "${profile}" > "${tmp}"
-      mv "${tmp}" "${profile}"
+      awk '
+        { lines[NR] = $0 }
+        $0 ~ /[^[:space:]]/ { last = NR }
+        END {
+          for (i = 1; i <= last; i++) {
+            print lines[i]
+          }
+        }
+      ' "${tmp}" > "${trimmed_tmp}"
+      mv "${trimmed_tmp}" "${profile}"
+      rm -f "${tmp}"
       log "Removed profile entry from ${profile}"
     fi
   done
