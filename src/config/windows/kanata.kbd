@@ -1,0 +1,108 @@
+;; Platform: Windows
+;; Base layout: compact ANSI/QWERTY-style layout.
+;; Current defsrc bottom row: lctl lmet lalt spc ralt
+;; Windows-supported in this config: prtsc, mouse buttons, mouse wheel, keypad keys.
+;; Avoid Linux/macOS-only key names here: fn, hiragana, katakana, NonUSPound/non_us_pound/nuhs, Lang2/eisu, plyr/player, powr/power, zzz/sleep.
+;; Note: lctl + ralt can interact with AltGr on non-US layouts. Consider windows-altgr if needed.
+;; Note: browser event.code-style names require kanata_winIOv2.exe or Interception; default kanata.exe differs.
+
+(defcfg
+  ;; defchordsv2 활성화를 위해 설정
+  concurrent-tap-hold yes
+  movemouse-inherit-accel-state yes   ;; 마우스 가속을 다른 키도 이어 받아서 처리
+  movemouse-smooth-diagonals yes      ;; 대각선 이동을 부드럽게 처리
+)
+
+(defsrc
+  esc
+  grv  1  2  3  4  5  6  7  8  9  0  -     =     bspc
+  tab  q  w  e  r  t  y  u  i  o  p  lbrc  rbrc  \
+  caps a  s  d  f  g  h  j  k  l  ;  apo   ret
+  lsft z  x  c  v  b  n  m  ,  .  /  rsft
+  lctl lmet  lalt  spc  ralt
+)
+
+(defalias
+  on_layers  (layer-while-held l-switch)
+  on_funcs   (layer-while-held nav_and_function)
+
+  sw_base  (layer-switch base)
+  sw_fn    (layer-switch nav_and_function)
+  sw_num   (layer-switch numpad)
+  sw_game  (layer-switch game)
+  sw_mouse (layer-switch mouse)
+
+  ectl    (tap-hold 180 180 esc lctl)
+  esc     (tap-hold 180 180 esc @on_layers)
+  grv     (tap-hold 180 180 grv @on_layers)
+  a       (tap-hold 180 180 a @on_funcs)
+
+  ml      (movemouse-accel-left  10 500 1 2)
+  md      (movemouse-accel-down  10 500 1 2)
+  mu      (movemouse-accel-up    10 500 1 2)
+  mr      (movemouse-accel-right 10 500 1 2)
+
+  wl      (mwheel-left 50 120)
+  wd      (mwheel-down 50 120)
+  wu      (mwheel-up 50 120)
+  wr      (mwheel-right 50 120)
+)
+
+(deflayer base
+  @esc
+  @grv   1   2  3  4  5  6  7  8  9  0  -     =     bspc
+  tab    q   w  e  r  t  y  u  i  o  p  lbrc  rbrc  \
+  @ectl  @a  s  d  f  g  h  j  k  l  ;  apo   ret
+  lsft   z   x  c  v  b  n  m  ,  .  /  rsft
+  lctl   lmet  lalt  spc  _
+)
+
+(deflayer l-switch
+  _
+  _  @sw_mouse @sw_fn  @sw_num  @sw_game  _  _  _  _  _  _  _  _  _
+  _  _         _       _         _        _  _  _  _  _  _  _  _  _
+  _  _         _       _         _        _  _  _  _  _  _  _  _
+  _  _         _       _         _        _  _  _  _  _  _  _
+  _  _         _       _         _
+)
+
+(deflayer nav_and_function
+  @esc
+  @grv   f1  f2  f3  f4  f5  f6    f7    f8  f9     f10    f11  f12  _
+  _      _   _   _   _   _   _     _     _   _      prtsc  ins  del  _
+  @ectl  _   _   _   _   _   left  down  up  right  home   end  _
+  _      _   _   _   _   _   _     _     _   pgup   pgdn   _
+  _      _   _   _   _
+)
+
+(deflayer numpad
+  @esc
+  @grv  _  _  _  _  _  _  nlck  _    _    _    _    _  _
+  _     _  _  _  _  _  _  kp7   kp8  kp9  kp+  kp-  _  _
+  _     _  _  _  _  _  _  kp4   kp5  kp6  kp*  kp/  _
+  _     _  _  _  _  _  _  kp1   kp2  kp3  _    _
+  _     _  _  kp0  kp.
+)
+
+(deflayer mouse
+  @esc
+  @grv  _    _    _    _  _  _  _      _     _     _  _  _  _
+  _     _    @mu  _    _  _  _  mbck   @wu   mfwd  _  _  _  _
+  _     @ml  @md  @mr  _  _  _  @wl    @wd   @wr   _  _  _
+  _     _    _    _    _  _  _  mlft   mmid  mrgt  _  _
+  _     _    _    _    _
+)
+
+(deflayer game
+  _
+  _  _  _  _  _  _  _  _  _  _  _  _  _  _
+  _  _  _  _  _  _  _  _  _  _  _  _  _  _
+  _  _  _  _  _  _  _  _  _  _  _  _  _
+  _  _  _  _  _  _  _  _  _  _  _  _
+  _  _  _  _  _
+)
+
+(defchordsv2
+  (esc 1) @sw_base 75 first-release (base l-switch)
+  (grv 1) @sw_base 75 first-release (base l-switch)
+)

@@ -5,7 +5,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 . (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "lib\paths.ps1")
-$ConfigSource = Join-Path $Script:KanataToolConfigDir "kanata.kbd"
+$ConfigSource = Join-Path $Script:KanataToolConfigDir "windows\kanata.kbd"
 $KanataVersion = if ($env:KANATA_VERSION) { $env:KANATA_VERSION } else { $null }
 
 function Write-Log([string]$Message) {

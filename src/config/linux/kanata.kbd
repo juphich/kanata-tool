@@ -1,3 +1,10 @@
+;; Platform: Linux
+;; Base layout: compact ANSI/QWERTY-style layout.
+;; Current defsrc bottom row: lctl lmet lalt spc ralt
+;; Linux-supported in this config: prtsc, mouse buttons, mouse wheel, keypad keys.
+;; Avoid macOS-only key names here: NonUSPound/non_us_pound/nuhs, Lang2/eisu.
+;; Avoid Windows-only assumptions here: Windows default binary/event.code behavior and Windows AltGr workarounds.
+
 (defcfg
   ;; defchordsv2 활성화를 위해 설정
   concurrent-tap-hold yes

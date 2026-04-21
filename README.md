@@ -25,6 +25,16 @@
 
 `src/commands` 아래 명령은 command 단위로 분리되어 유지보수할 수 있게 구성합니다.
 
+기본 keymap source는 플랫폼별로 분리합니다.
+
+```text
+src/config/linux/kanata.kbd
+src/config/macos/kanata.kbd
+src/config/windows/kanata.kbd
+```
+
+`setup` 단계에서 현재 OS에 맞는 source config를 선택해 base/runtime config로 설치합니다.
+
 ## 설치
 
 ### Linux / macOS
@@ -43,6 +53,7 @@ source ~/.zshrc   # 또는 ~/.bashrc, ~/.profile
 - `~/.local/share/kanata-tool`에 관리 CLI와 자산 설치
 - `~/.local/bin/kanata-tool` wrapper 생성
 - setup 단계에서 `kanata` 바이너리를 네트워크로 다운로드
+- setup 단계에서 현재 OS에 맞는 `src/config/<platform>/kanata.kbd`를 base/runtime config로 설치
 - shell profile에 PATH 초기화 라인 추가
 - `kanata-tool setup` 자동 실행
 
@@ -61,6 +72,7 @@ Windows 설치 스크립트는 다음을 수행합니다.
 - `%LOCALAPPDATA%\kanata-tool`에 관리 CLI와 자산 설치
 - `%LOCALAPPDATA%\kanata-tool\bin`을 사용자 PATH에 추가
 - setup 단계에서 `kanata.exe`를 네트워크로 다운로드
+- setup 단계에서 `src/config/windows/kanata.kbd`를 base/runtime config로 설치
 - `kanata-tool setup` 자동 실행
 
 ## 명령어
@@ -89,7 +101,9 @@ kanata-tool keymap --print
 동작 방식:
 
 - 기본 제공 설정 파일은 수정하지 않습니다.
+- 기본 제공 설정 파일은 `src/config/<platform>/kanata.kbd`이며, setup 시 OS에 맞는 파일이 `kanata.base.kbd`로 복사됩니다.
 - 실제 수정 대상은 runtime 설정 파일 `~/.config/kanata/kanata.kbd`입니다.
+- `--init`은 runtime 설정을 설치된 base config로 되돌립니다.
 - 변경 후 현재 kanata가 동작 중이면 reload/restart를 수행합니다.
 - 동작 중이 아니면 설정 파일만 갱신합니다.
 - `--print`는 현재 runtime keymap 내용을 stdout으로 출력합니다.
@@ -131,13 +145,15 @@ kanata-tool device --remove /dev/input/event20
 - 관리 CLI 및 자산: `~/.local/share/kanata-tool`
 - 실행 wrapper: `~/.local/bin/kanata-tool`
 - kanata 실행 파일: `~/.local/bin/kanata`
-- 설정 파일: `~/.config/kanata`
+- base config: `~/.config/kanata/kanata.base.kbd`
+- runtime config: `~/.config/kanata/kanata.kbd`
 
 ### Windows
 
 - 관리 CLI 및 자산: `%LOCALAPPDATA%\kanata-tool`
 - kanata 실행 파일: `%LOCALAPPDATA%\kanata\bin\kanata.exe`
-- 설정 파일: `%APPDATA%\kanata`
+- base config: `%APPDATA%\kanata\kanata.base.kbd`
+- runtime config: `%APPDATA%\kanata\kanata.kbd`
 
 ## 제거
 

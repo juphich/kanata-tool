@@ -5,7 +5,7 @@ KANATA_VERSION="${KANATA_VERSION:-}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/../../lib/paths.sh"
-CFG_SRC="${KANATA_TOOL_CONFIG_DIR}/kanata.kbd"
+CFG_SRC="${KANATA_TOOL_CONFIG_DIR}/macos/kanata.kbd"
 
 log() { printf '[setup] %s\n' "$*"; }
 
