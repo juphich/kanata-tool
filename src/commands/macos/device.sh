@@ -23,9 +23,15 @@ EOF
 }
 
 reload_if_running() {
+  local uid launchd_domain launchd_service
+  uid="$(id -u)"
+  launchd_domain="gui/${uid}"
+  launchd_service="${launchd_domain}/com.kanata"
+
   if pgrep -x kanata >/dev/null 2>&1; then
-    launchctl unload "${KANATA_LAUNCH_AGENT}" >/dev/null 2>&1 || true
-    if launchctl load "${KANATA_LAUNCH_AGENT}" >/dev/null 2>&1; then
+    launchctl bootout "${launchd_domain}" "${KANATA_LAUNCH_AGENT}" >/dev/null 2>&1 || true
+    if launchctl bootstrap "${launchd_domain}" "${KANATA_LAUNCH_AGENT}" >/dev/null 2>&1; then
+      launchctl kickstart -k "${launchd_service}" >/dev/null 2>&1 || true
       device_log "launch agent를 다시 시작했습니다"
       return
     fi

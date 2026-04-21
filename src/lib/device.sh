@@ -170,7 +170,8 @@ device_has_source() {
 }
 
 device_run_list_raw() {
-  "${KANATA_RUNTIME_BIN}" --list
+  # shellcheck disable=SC2086
+  ${KANATA_RUN_PREFIX:-} "${KANATA_RUNTIME_BIN}" --list
 }
 
 device_emit_entry() {
@@ -188,6 +189,7 @@ device_collect_entries() {
   local raw name="" id="" vendor_product="" source line num=1 in_entry=0
   local -a selected_sources=()
   local default_all=1
+  local in_table=0 hash vendor_id product_id product_key
   while IFS= read -r line; do
     selected_sources+=("${line}")
   done < <(device_current_sources || true)
@@ -202,7 +204,44 @@ device_collect_entries() {
     [[ "${raw}" == "Available keyboard devices:" ]] && continue
     [[ "${raw}" == "Found "* ]] && continue
     [[ "${raw}" == "Configuration example:" ]] && break
-    [[ "${raw}" =~ ^==+$ ]] && continue
+    [[ "${raw}" =~ ^==+$ ]] && {
+      in_table=1
+      continue
+    }
+    [[ "${raw}" =~ ^[-[:space:]]+$ ]] && continue
+    [[ "${raw}" =~ ^hash[[:space:]]+vendor_id[[:space:]]+product_id[[:space:]]+product_key$ ]] && {
+      in_table=1
+      continue
+    }
+
+    if (( in_table )) && [[ "${raw}" =~ ^(0x[0-9A-Fa-f]+)[[:space:]]+([0-9]+)[[:space:]]+([0-9]+)([[:space:]]+(.*))?$ ]]; then
+      hash="${BASH_REMATCH[1]}"
+      vendor_id="${BASH_REMATCH[2]}"
+      product_id="${BASH_REMATCH[3]}"
+      product_key="$(device_trim "${BASH_REMATCH[5]:-}")"
+      if [[ -n "${product_key}" ]]; then
+        name="${product_key}"
+        id="${hash}"
+      else
+        name="${hash}"
+        id="${hash}"
+      fi
+      vendor_product="${vendor_id} (0x$(printf '%X' "${vendor_id}")), Product ID: ${product_id} (0x$(printf '%X' "${product_id}"))"
+      if [[ -n "${product_key}" ]]; then
+        source="${product_key}"
+      else
+        source="${hash}"
+      fi
+      if [[ "${default_all}" == "1" ]]; then
+        device_emit_entry "${num}" "${name}" "${id}" "${vendor_product}" "${source}" "all"
+      elif device_has_source "${source}" "${selected_sources[@]}"; then
+        device_emit_entry "${num}" "${name}" "${id}" "${vendor_product}" "${source}" "yes"
+      else
+        device_emit_entry "${num}" "${name}" "${id}" "${vendor_product}" "${source}" "no"
+      fi
+      num=$((num + 1))
+      continue
+    fi
 
     if [[ "${raw}" =~ ^[0-9]+\.\ \"(.*)\"$ ]]; then
       if (( in_entry )) && [[ -n "${name}" ]]; then
@@ -269,10 +308,12 @@ device_parse_vendor_product_ids() {
 
 device_collect_entries_filtered() {
   local line
-  local -A best_line_by_vendor_product=()
-  local -A best_priority_by_vendor_product=()
   local -a passthrough_lines=()
+  local -a vendor_products=()
+  local -a best_lines=()
+  local -a best_priorities=()
   local num name id vendor_product source selected priority current_priority
+  local i found_index sorted_vendor_product
 
   while IFS=$'\t' read -r num name id vendor_product source selected; do
     if [[ -z "${vendor_product}" ]]; then
@@ -281,26 +322,52 @@ device_collect_entries_filtered() {
     fi
 
     priority="$(device_name_priority "${name}")"
-    current_priority="${best_priority_by_vendor_product[${vendor_product}]:--1}"
+    found_index=""
+    if (( ${#vendor_products[@]} > 0 )); then
+      for i in "${!vendor_products[@]}"; do
+        if [[ "${vendor_products[${i}]}" == "${vendor_product}" ]]; then
+          found_index="${i}"
+          break
+        fi
+      done
+    fi
+
+    if [[ -z "${found_index}" ]]; then
+      vendor_products+=("${vendor_product}")
+      best_priorities+=("${priority}")
+      best_lines+=("${name}"$'\t'"${id}"$'\t'"${source}"$'\t'"${selected}")
+      continue
+    fi
+
+    current_priority="${best_priorities[${found_index}]:--1}"
     if (( priority > current_priority )); then
-      best_priority_by_vendor_product["${vendor_product}"]="${priority}"
-      best_line_by_vendor_product["${vendor_product}"]="${name}"$'\t'"${id}"$'\t'"${source}"$'\t'"${selected}"
+      best_priorities[${found_index}]="${priority}"
+      best_lines[${found_index}]="${name}"$'\t'"${id}"$'\t'"${source}"$'\t'"${selected}"
     fi
   done < <(device_collect_entries)
 
   num=1
-  for line in "${passthrough_lines[@]}"; do
-    IFS=$'\t' read -r name id source selected <<< "${line}"
-    printf '%s\t%s\t%s\t%s\t%s\n' "${num}" "${name}" "${id}" "${source}" "${selected}"
-    num=$((num + 1))
-  done
+  if (( ${#passthrough_lines[@]} > 0 )); then
+    for line in "${passthrough_lines[@]}"; do
+      IFS=$'\t' read -r name id source selected <<< "${line}"
+      printf '%s\t%s\t%s\t%s\t%s\n' "${num}" "${name}" "${id}" "${source}" "${selected}"
+      num=$((num + 1))
+    done
+  fi
 
-  while IFS= read -r vendor_product; do
-    line="${best_line_by_vendor_product[${vendor_product}]}"
-    IFS=$'\t' read -r name id source selected <<< "${line}"
-    printf '%s\t%s\t%s\t%s\t%s\n' "${num}" "${name}" "${id}" "${source}" "${selected}"
-    num=$((num + 1))
-  done < <(printf '%s\n' "${!best_line_by_vendor_product[@]}" | sort)
+  if (( ${#vendor_products[@]} > 0 )); then
+    while IFS= read -r sorted_vendor_product; do
+      [[ -n "${sorted_vendor_product}" ]] || continue
+      for i in "${!vendor_products[@]}"; do
+        [[ "${vendor_products[${i}]}" == "${sorted_vendor_product}" ]] || continue
+        line="${best_lines[${i}]}"
+        break
+      done
+      IFS=$'\t' read -r name id source selected <<< "${line}"
+      printf '%s\t%s\t%s\t%s\t%s\n' "${num}" "${name}" "${id}" "${source}" "${selected}"
+      num=$((num + 1))
+    done < <(printf '%s\n' "${vendor_products[@]}" | sort)
+  fi
 }
 
 device_lookup_entry_by_num() {
@@ -509,9 +576,11 @@ device_add_source() {
     current_sources+=("${item}")
   done < <(device_current_sources || true)
 
-  if device_has_source "${target_source}" "${current_sources[@]}"; then
-    device_log "이미 등록된 키보드입니다"
-    return 10
+  if (( ${#current_sources[@]} > 0 )); then
+    if device_has_source "${target_source}" "${current_sources[@]}"; then
+      device_log "이미 등록된 키보드입니다"
+      return 10
+    fi
   fi
 
   current_sources+=("${target_source}")
@@ -529,13 +598,15 @@ device_remove_source() {
     current_sources+=("${item}")
   done < <(device_current_sources || true)
 
-  for item in "${current_sources[@]}"; do
-    if [[ "${item}" == "${target_source}" ]]; then
-      found=1
-      continue
-    fi
-    updated_sources+=("${item}")
-  done
+  if (( ${#current_sources[@]} > 0 )); then
+    for item in "${current_sources[@]}"; do
+      if [[ "${item}" == "${target_source}" ]]; then
+        found=1
+        continue
+      fi
+      updated_sources+=("${item}")
+    done
+  fi
 
   if [[ "${found}" == "0" ]]; then
     device_log "등록되지 않은 키보드입니다"
