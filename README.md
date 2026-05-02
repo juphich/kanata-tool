@@ -40,11 +40,26 @@ src/config/windows/kanata.kbd
 
 ### Linux / macOS
 
-GitHub Release에서 `install.sh`와 `kanata-tool-x.y.z.tar.gz`를 내려받은 뒤 설치합니다.
+GitHub Release의 최신 안정 버전을 설치합니다.
 
 ```bash
-tar -xzf kanata-tool-x.y.z.tar.gz
-bash install.sh --from-dir kanata-tool-x.y.z
+curl -fsSL https://github.com/juphich/kanata-tool/releases/latest/download/install.sh | bash
+source ~/.zshrc   # 또는 ~/.bashrc, ~/.profile
+```
+
+특정 버전을 설치하려면:
+
+```bash
+curl -fsSL https://github.com/juphich/kanata-tool/releases/latest/download/install.sh | bash -s -- --version v1.0.0
+```
+
+수동으로 payload archive를 내려받아 설치할 수도 있습니다.
+
+```bash
+curl -LO https://github.com/juphich/kanata-tool/releases/latest/download/install.sh
+curl -LO https://github.com/juphich/kanata-tool/releases/latest/download/kanata-tool-v1.0.0.tar.gz
+tar -xzf kanata-tool-v1.0.0.tar.gz
+bash install.sh --from-dir kanata-tool-v1.0.0
 source ~/.zshrc   # 또는 ~/.bashrc, ~/.profile
 ```
 
