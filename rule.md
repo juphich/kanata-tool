@@ -8,6 +8,8 @@
 .
 ├── README.md
 ├── dist/
+├── .github/
+│   └── workflows/
 ├── src/
 │   ├── install.sh
 │   ├── install.ps1
@@ -17,7 +19,6 @@
 │   ├── autostart/
 │   ├── scripts/
 │   └── lib/
-├── .gitlab-ci.yml
 └── .codex/
 ```
 
@@ -38,8 +39,9 @@
 
 - 배포 패키지는 `src/scripts/package.sh`로 생성한다.
 - 산출물은 `dist/kanata-tool-<version>.tar.gz`, `dist/kanata-tool-<version>.zip`, `dist/SHA256SUMS`다.
-- 공식 다운로드 채널은 GitLab Release asset link다.
-- release 파이프라인은 `x.y.z` 형식 태그 push에서만 동작한다.
+- 배포 아카이브는 repository의 `src/` 디렉토리를 포함하지 않고, `src` 아래 자산을 패키지 루트로 펼친 flat layout을 사용한다.
+- 공식 다운로드 채널은 GitHub Release asset link다.
+- release 파이프라인은 `vX.Y.Z` 또는 `X.Y.Z` 형식 태그 push에서만 동작한다.
 - 설치 시 `kanata` 실행 파일은 네트워크로 다운로드한다.
 
 ## 유지보수 규칙

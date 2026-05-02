@@ -10,6 +10,8 @@
 .
 ├── README.md
 ├── dist/
+├── .github/
+│   └── workflows/
 ├── src/
 │   ├── install.sh
 │   ├── install.ps1
@@ -19,7 +21,6 @@
 │   ├── autostart/
 │   ├── scripts/
 │   └── lib/
-├── .gitlab-ci.yml
 └── .codex/
 ```
 
@@ -39,7 +40,7 @@ src/config/windows/kanata.kbd
 
 ### Linux / macOS
 
-GitLab Release에서 `kanata-tool-x.y.z.tar.gz`를 내려받은 뒤 설치합니다.
+GitHub Release에서 `kanata-tool-x.y.z.tar.gz`를 내려받은 뒤 설치합니다.
 
 ```bash
 tar -xzf kanata-tool-x.y.z.tar.gz
@@ -53,13 +54,13 @@ source ~/.zshrc   # 또는 ~/.bashrc, ~/.profile
 - `~/.local/share/kanata-tool`에 관리 CLI와 자산 설치
 - `~/.local/bin/kanata-tool` wrapper 생성
 - setup 단계에서 `kanata` 바이너리를 네트워크로 다운로드
-- setup 단계에서 현재 OS에 맞는 `src/config/<platform>/kanata.kbd`를 base/runtime config로 설치
+- setup 단계에서 현재 OS에 맞는 `config/<platform>/kanata.kbd`를 base/runtime config로 설치
 - shell profile에 PATH 초기화 라인 추가
 - `kanata-tool setup` 자동 실행
 
 ### Windows
 
-GitLab Release에서 `kanata-tool-x.y.z.zip`를 내려받은 뒤 설치합니다.
+GitHub Release에서 `kanata-tool-x.y.z.zip`를 내려받은 뒤 설치합니다.
 
 ```powershell
 Expand-Archive kanata-tool-x.y.z.zip
@@ -72,7 +73,7 @@ Windows 설치 스크립트는 다음을 수행합니다.
 - `%LOCALAPPDATA%\kanata-tool`에 관리 CLI와 자산 설치
 - `%LOCALAPPDATA%\kanata-tool\bin`을 사용자 PATH에 추가
 - setup 단계에서 `kanata.exe`를 네트워크로 다운로드
-- setup 단계에서 `src/config/windows/kanata.kbd`를 base/runtime config로 설치
+- setup 단계에서 `config/windows/kanata.kbd`를 base/runtime config로 설치
 - `kanata-tool setup` 자동 실행
 
 ## 명령어
@@ -102,6 +103,7 @@ kanata-tool keymap --print
 
 - 기본 제공 설정 파일은 수정하지 않습니다.
 - 기본 제공 설정 파일은 `src/config/<platform>/kanata.kbd`이며, setup 시 OS에 맞는 파일이 `kanata.base.kbd`로 복사됩니다.
+- 배포 아카이브 안에서는 `src/` 디렉토리를 제거하고 `config/<platform>/kanata.kbd`처럼 패키지 루트에 펼쳐진 경로를 사용합니다.
 - 실제 수정 대상은 runtime 설정 파일 `~/.config/kanata/kanata.kbd`입니다.
 - `--init`은 runtime 설정을 설치된 base config로 되돌립니다.
 - 변경 후 현재 kanata가 동작 중이면 reload/restart를 수행합니다.
@@ -191,19 +193,35 @@ bash src/scripts/fetch-kanata-binaries.sh --version v1.8.1 --platform linux --ar
 bash src/scripts/package.sh 1.2.3
 ```
 
+패키징 시 repository 내부의 `src/` 디렉토리는 배포 아카이브에 그대로 넣지 않습니다. 대신 `src` 아래의 실행 자산을 패키지 루트로 복사해 아래처럼 설치 친화적인 flat layout을 만듭니다.
+
+```text
+kanata-tool-1.2.3/
+├── install.sh
+├── install.ps1
+├── bin/
+├── commands/
+├── config/
+├── autostart/
+├── scripts/
+├── lib/
+└── README.md
+```
+
 생성 결과:
 
 - `dist/kanata-tool-1.2.3.tar.gz`
 - `dist/kanata-tool-1.2.3.zip`
 - `dist/SHA256SUMS`
 
-## GitLab CI / Release
+## GitHub Actions / Release
 
 - `verify`: shell / PowerShell 문법 검사
-- `package`: `x.y.z` 태그에서 release archive 생성
-- `release`: `dist` 산출물을 GitLab Release asset link로 등록
+- `package-check`: main/PR에서 release archive layout 검증
+- `release`: `vX.Y.Z` 또는 `X.Y.Z` 태그에서 release archive 생성
+- 생성된 `dist` 산출물을 GitHub Release asset으로 등록
 
-공식 다운로드 URL은 GitLab Release asset link를 기준으로 합니다.
+공식 다운로드 URL은 GitHub Release asset link를 기준으로 합니다.
 설치 시 `kanata` 실행 파일 다운로드를 위해 네트워크가 필요합니다.
 
 ## 플랫폼 메모
