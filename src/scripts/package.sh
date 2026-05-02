@@ -18,14 +18,16 @@ cleanup() {
 trap cleanup EXIT
 
 mkdir -p "${PKG_DIR}" "${DIST_DIR}"
+rm -f "${DIST_DIR}/${PACKAGE_NAME}.tar.gz" "${DIST_DIR}/${PACKAGE_NAME}.zip" "${DIST_DIR}/SHA256SUMS"
 
-for item in autostart bin commands config lib scripts install.sh install.ps1; do
+for item in autostart bin commands config lib scripts; do
   cp -R "${SRC_DIR}/${item}" "${PKG_DIR}/"
 done
 
 cp "${PROJECT_DIR}/README.md" "${PKG_DIR}/README.md"
+printf '%s\n' "${VERSION}" > "${PKG_DIR}/VERSION"
 
-chmod +x "${PKG_DIR}/install.sh" "${PKG_DIR}/bin/kanata-tool" "${PKG_DIR}/scripts/package.sh" "${PKG_DIR}/scripts/fetch-kanata-binaries.sh"
+chmod +x "${PKG_DIR}/bin/kanata-tool" "${PKG_DIR}/scripts/package.sh" "${PKG_DIR}/scripts/fetch-kanata-binaries.sh"
 chmod +x "${PKG_DIR}/commands/linux/"*.sh "${PKG_DIR}/commands/macos/"*.sh
 
 tar -czf "${DIST_DIR}/${PACKAGE_NAME}.tar.gz" -C "${TMP_DIR}" "${PACKAGE_NAME}"

@@ -7,12 +7,82 @@ CLI_WRAPPER="${BIN_DIR}/kanata-tool"
 INIT_SCRIPT="${INSTALL_ROOT}/init.sh"
 MARKER="# added by kanata-tool installer"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PACKAGE_README="${SCRIPT_DIR}/README.md"
+INSTALLER_SH="${BASH_SOURCE[0]}"
+SOURCE_DIR=""
+PACKAGE_README=""
+PRESERVE_CONFIG=0
+DEV_VERSION="0.0.0-dev"
 INIT_SCRIPT_SOURCE="\${HOME}/.local/share/kanata-tool/init.sh"
 
 log() { printf '[install] %s\n' "$*"; }
 warn() { printf '[install] %s\n' "$*" >&2; }
 error_exit() { printf '[install] %s\n' "$*" >&2; exit 1; }
+
+usage() {
+  cat <<'EOF'
+Usage: install.sh [options]
+
+Options:
+  --from-dir <path>    Install files from a local payload directory
+  --preserve-config    Preserve existing runtime keymap during setup
+  --uninstall          Remove kanata-tool and runtime files
+  -h, --help           Show this help
+EOF
+}
+
+detect_default_source_dir() {
+  if [[ -d "${SCRIPT_DIR}/bin" && -d "${SCRIPT_DIR}/commands" ]]; then
+    SOURCE_DIR="${SCRIPT_DIR}"
+    return 0
+  fi
+
+  if [[ -d "${SCRIPT_DIR}/src/bin" && -d "${SCRIPT_DIR}/src/commands" ]]; then
+    SOURCE_DIR="$(cd "${SCRIPT_DIR}/src" && pwd)"
+    return 0
+  fi
+
+  error_exit "No payload directory found. Use --from-dir <path>."
+}
+
+parse_args() {
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --from-dir)
+        [[ $# -ge 2 ]] || error_exit "--from-dir requires a path"
+        [[ -d "$2" ]] || error_exit "Source directory not found: $2"
+        SOURCE_DIR="$(cd "$2" && pwd)"
+        shift
+        ;;
+      --preserve-config)
+        PRESERVE_CONFIG=1
+        ;;
+      --uninstall)
+        perform_uninstall
+        exit 0
+        ;;
+      -h|--help)
+        usage
+        exit 0
+        ;;
+      *)
+        error_exit "Unknown option: $1"
+        ;;
+    esac
+    shift
+  done
+
+  if [[ -z "${SOURCE_DIR}" ]]; then
+    detect_default_source_dir
+  fi
+  PACKAGE_README="${SOURCE_DIR}/README.md"
+}
+
+require_source_item() {
+  local item="$1"
+  if [[ ! -e "${SOURCE_DIR}/${item}" ]]; then
+    error_exit "Missing source item: ${SOURCE_DIR}/${item}"
+  fi
+}
 
 detected_shell="$(basename "${SHELL:-sh}")"
 case "${detected_shell}" in
@@ -70,19 +140,29 @@ perform_uninstall() {
 }
 
 install_tree() {
+  local item
+  for item in autostart bin commands config scripts lib; do
+    require_source_item "${item}"
+  done
+
   rm -rf "${INSTALL_ROOT}"
   mkdir -p "${INSTALL_ROOT}" "${INSTALL_ROOT}/bin" "${BIN_DIR}"
-  cp -R "${SCRIPT_DIR}/autostart" "${INSTALL_ROOT}/"
-  cp -R "${SCRIPT_DIR}/commands" "${INSTALL_ROOT}/"
-  cp -R "${SCRIPT_DIR}/config" "${INSTALL_ROOT}/"
-  cp -R "${SCRIPT_DIR}/scripts" "${INSTALL_ROOT}/"
-  cp -R "${SCRIPT_DIR}/lib" "${INSTALL_ROOT}/"
-  cp "${SCRIPT_DIR}/bin/kanata-tool" "${INSTALL_ROOT}/bin/kanata-tool"
-  cp "${SCRIPT_DIR}/bin/kanata-tool.ps1" "${INSTALL_ROOT}/bin/kanata-tool.ps1"
-  cp "${SCRIPT_DIR}/bin/kanata-tool.cmd" "${INSTALL_ROOT}/bin/kanata-tool.cmd"
-  cp "${SCRIPT_DIR}/install.sh" "${INSTALL_ROOT}/install.sh"
+  cp -R "${SOURCE_DIR}/autostart" "${INSTALL_ROOT}/"
+  cp -R "${SOURCE_DIR}/commands" "${INSTALL_ROOT}/"
+  cp -R "${SOURCE_DIR}/config" "${INSTALL_ROOT}/"
+  cp -R "${SOURCE_DIR}/scripts" "${INSTALL_ROOT}/"
+  cp -R "${SOURCE_DIR}/lib" "${INSTALL_ROOT}/"
+  cp "${SOURCE_DIR}/bin/kanata-tool" "${INSTALL_ROOT}/bin/kanata-tool"
+  cp "${SOURCE_DIR}/bin/kanata-tool.ps1" "${INSTALL_ROOT}/bin/kanata-tool.ps1"
+  cp "${SOURCE_DIR}/bin/kanata-tool.cmd" "${INSTALL_ROOT}/bin/kanata-tool.cmd"
+  cp "${INSTALLER_SH}" "${INSTALL_ROOT}/install.sh"
   if [[ -f "${SCRIPT_DIR}/install.ps1" ]]; then
     cp "${SCRIPT_DIR}/install.ps1" "${INSTALL_ROOT}/install.ps1"
+  fi
+  if [[ -f "${SOURCE_DIR}/VERSION" ]]; then
+    cp "${SOURCE_DIR}/VERSION" "${INSTALL_ROOT}/VERSION"
+  else
+    printf '%s\n' "${DEV_VERSION}" > "${INSTALL_ROOT}/VERSION"
   fi
   chmod +x "${INSTALL_ROOT}/install.sh" "${INSTALL_ROOT}/bin/kanata-tool"
   chmod +x "${INSTALL_ROOT}/commands/linux/"*.sh "${INSTALL_ROOT}/commands/macos/"*.sh
@@ -138,10 +218,7 @@ check_macos_prerequisites() {
 }
 
 main() {
-  if [[ "${1:-}" == "--uninstall" ]]; then
-    perform_uninstall
-    exit 0
-  fi
+  parse_args "$@"
 
   if [[ "$(uname -s)" == "Darwin" ]]; then
     check_macos_prerequisites
@@ -153,9 +230,13 @@ main() {
   register_profiles
 
   log "Installed management CLI to ${CLI_WRAPPER}"
-  KANATA_TOOL_HOME="${INSTALL_ROOT}" bash "${INSTALL_ROOT}/bin/kanata-tool" setup
+  if [[ "${PRESERVE_CONFIG}" == "1" ]]; then
+    KANATA_TOOL_HOME="${INSTALL_ROOT}" bash "${INSTALL_ROOT}/bin/kanata-tool" setup --preserve-config
+  else
+    KANATA_TOOL_HOME="${INSTALL_ROOT}" bash "${INSTALL_ROOT}/bin/kanata-tool" setup
+  fi
 
-  [[ -f "${PACKAGE_README}" ]] && log "Installed from package in ${SCRIPT_DIR}"
+  [[ -f "${PACKAGE_README}" ]] && log "Installed from package in ${SOURCE_DIR}"
   log "Installation completed"
   print_reload_hint
 }

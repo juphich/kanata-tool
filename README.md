@@ -12,9 +12,9 @@
 ├── dist/
 ├── .github/
 │   └── workflows/
+├── install.sh
+├── install.ps1
 ├── src/
-│   ├── install.sh
-│   ├── install.ps1
 │   ├── bin/
 │   ├── commands/
 │   ├── config/
@@ -40,12 +40,11 @@ src/config/windows/kanata.kbd
 
 ### Linux / macOS
 
-GitHub Release에서 `kanata-tool-x.y.z.tar.gz`를 내려받은 뒤 설치합니다.
+GitHub Release에서 `install.sh`와 `kanata-tool-x.y.z.tar.gz`를 내려받은 뒤 설치합니다.
 
 ```bash
 tar -xzf kanata-tool-x.y.z.tar.gz
-cd kanata-tool-x.y.z
-./install.sh
+bash install.sh --from-dir kanata-tool-x.y.z
 source ~/.zshrc   # 또는 ~/.bashrc, ~/.profile
 ```
 
@@ -60,12 +59,11 @@ source ~/.zshrc   # 또는 ~/.bashrc, ~/.profile
 
 ### Windows
 
-GitHub Release에서 `kanata-tool-x.y.z.zip`를 내려받은 뒤 설치합니다.
+GitHub Release에서 `install.ps1`과 `kanata-tool-x.y.z.zip`를 내려받은 뒤 설치합니다.
 
 ```powershell
 Expand-Archive kanata-tool-x.y.z.zip
-cd kanata-tool-x.y.z
-.\install.ps1
+.\install.ps1 -FromDir .\kanata-tool-x.y.z
 ```
 
 Windows 설치 스크립트는 다음을 수행합니다.
@@ -86,6 +84,10 @@ kanata-tool keymap
 kanata-tool status
 kanata-tool start
 kanata-tool stop
+kanata-tool update --check
+kanata-tool update
+kanata-tool update --version v1.2.3
+kanata-tool version
 ```
 
 `kanata-tool uninstall`은 clean uninstall을 수행합니다.
@@ -140,6 +142,46 @@ kanata-tool device --remove /dev/input/event20
 - 현재 실행 중 여부
 - 자동시작 등록 여부
 
+## 업데이트
+
+업데이트 확인:
+
+```bash
+kanata-tool update --check
+```
+
+최신 안정 릴리스로 업데이트:
+
+```bash
+kanata-tool update
+```
+
+특정 버전으로 업데이트:
+
+```bash
+kanata-tool update --version v1.2.3
+```
+
+`update --check`는 GitHub Release 기준으로 설치된 `kanata-tool`보다 새 버전이 있는지 확인합니다. 이 명령은 읽기 전용이며 설치 파일을 변경하지 않습니다.
+
+`update`는 GitHub Release asset과 `SHA256SUMS`를 내려받아 checksum을 검증한 뒤 관리 CLI를 갱신합니다.
+
+- Linux / macOS: `kanata-tool-<version>.tar.gz`
+- Windows: `kanata-tool-<version>.zip`
+- 공통 checksum: `SHA256SUMS`
+
+업데이트 중 기존 runtime keymap은 보존됩니다.
+
+- POSIX runtime config: `~/.config/kanata/kanata.kbd`
+- Windows runtime config: `%APPDATA%\kanata\kanata.kbd`
+
+새 패키지의 기본 keymap은 `kanata.base.kbd`에 반영될 수 있습니다. 사용자가 실제로 수정하는 runtime keymap은 덮어쓰지 않습니다.
+
+업데이트 요구사항:
+
+- POSIX: `curl`, `jq`, `tar`, `sha256sum`
+- Windows: PowerShell web cmdlet, `Expand-Archive`, `Get-FileHash`
+
 ## 설치 위치
 
 ### Linux / macOS
@@ -193,12 +235,17 @@ bash src/scripts/fetch-kanata-binaries.sh --version v1.8.1 --platform linux --ar
 bash src/scripts/package.sh 1.2.3
 ```
 
-패키징 시 repository 내부의 `src/` 디렉토리는 배포 아카이브에 그대로 넣지 않습니다. 대신 `src` 아래의 실행 자산을 패키지 루트로 복사해 아래처럼 설치 친화적인 flat layout을 만듭니다.
+개발 중 로컬 source를 바로 설치할 수 있습니다.
+
+```bash
+bash install.sh --from-dir src
+```
+
+패키징 시 repository 내부의 `src/` 디렉토리는 배포 아카이브에 그대로 넣지 않습니다. 대신 `src` 아래의 실행 자산을 패키지 루트로 복사해 payload archive를 만듭니다. installer는 archive에 포함하지 않고 GitHub Release에 별도 asset으로 배포합니다.
 
 ```text
 kanata-tool-1.2.3/
-├── install.sh
-├── install.ps1
+├── VERSION
 ├── bin/
 ├── commands/
 ├── config/
@@ -210,6 +257,14 @@ kanata-tool-1.2.3/
 
 생성 결과:
 
+- `dist/kanata-tool-1.2.3.tar.gz`
+- `dist/kanata-tool-1.2.3.zip`
+- `dist/SHA256SUMS`
+
+Release asset:
+
+- `install.sh`
+- `install.ps1`
 - `dist/kanata-tool-1.2.3.tar.gz`
 - `dist/kanata-tool-1.2.3.zip`
 - `dist/SHA256SUMS`

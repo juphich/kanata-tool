@@ -1,5 +1,6 @@
 param(
-  [string]$KanataExePath = ""
+  [string]$KanataExePath = "",
+  [switch]$PreserveConfig
 )
 
 $ErrorActionPreference = "Stop"
@@ -7,6 +8,7 @@ $ErrorActionPreference = "Stop"
 . (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "lib\paths.ps1")
 $ConfigSource = Join-Path $Script:KanataToolConfigDir "windows\kanata.kbd"
 $KanataVersion = if ($env:KANATA_VERSION) { $env:KANATA_VERSION } else { $null }
+$PreserveConfigEnabled = $PreserveConfig -or $env:KANATA_TOOL_PRESERVE_CONFIG -eq "1"
 
 function Write-Log([string]$Message) {
   Write-Host "[setup] $Message"
@@ -110,8 +112,14 @@ if ($KanataExePath -and (Test-Path $KanataExePath)) {
 }
 
 Copy-Item $ConfigSource $Script:KanataConfigBase -Force
-Copy-Item $Script:KanataConfigBase $Script:KanataConfigRuntime -Force
-Write-Log "Config installed to $Script:KanataConfigRuntime"
+Write-Log "Base config installed to $Script:KanataConfigBase"
+
+if ($PreserveConfigEnabled -and (Test-Path $Script:KanataConfigRuntime)) {
+  Write-Log "Runtime config preserved at $Script:KanataConfigRuntime"
+} else {
+  Copy-Item $Script:KanataConfigBase $Script:KanataConfigRuntime -Force
+  Write-Log "Runtime config installed to $Script:KanataConfigRuntime"
+}
 
 & $Script:KanataRuntimeBin --cfg $Script:KanataConfigRuntime --check
 if ($LASTEXITCODE -ne 0) {

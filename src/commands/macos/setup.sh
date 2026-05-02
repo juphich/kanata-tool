@@ -2,12 +2,28 @@
 set -euo pipefail
 
 KANATA_VERSION="${KANATA_VERSION:-}"
+PRESERVE_CONFIG="${KANATA_TOOL_PRESERVE_CONFIG:-0}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/../../lib/paths.sh"
 CFG_SRC="${KANATA_TOOL_CONFIG_DIR}/macos/kanata.kbd"
 
 log() { printf '[setup] %s\n' "$*"; }
+
+parse_args() {
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --preserve-config)
+        PRESERVE_CONFIG=1
+        ;;
+      *)
+        log "Unknown option: $1"
+        exit 1
+        ;;
+    esac
+    shift
+  done
+}
 
 check_prerequisites() {
   local missing=()
@@ -69,8 +85,15 @@ install_binary_macos() {
 install_config() {
   mkdir -p "${KANATA_CONFIG_DIR}"
   cp "${CFG_SRC}" "${KANATA_CONFIG_BASE}"
+  log "Base config installed to ${KANATA_CONFIG_BASE}"
+
+  if [[ "${PRESERVE_CONFIG}" == "1" && -f "${KANATA_CONFIG_RUNTIME}" ]]; then
+    log "Runtime config preserved at ${KANATA_CONFIG_RUNTIME}"
+    return 0
+  fi
+
   cp "${KANATA_CONFIG_BASE}" "${KANATA_CONFIG_RUNTIME}"
-  log "Config installed to ${KANATA_CONFIG_RUNTIME}"
+  log "Runtime config installed to ${KANATA_CONFIG_RUNTIME}"
 }
 
 install_sudoers() {
@@ -91,6 +114,8 @@ install_launchagent() {
 }
 
 main() {
+  parse_args "$@"
+
   if [[ "$(uname -s)" != "Darwin" ]]; then
     log "This command is for macOS only"
     exit 1

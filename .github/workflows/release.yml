@@ -27,7 +27,7 @@ jobs:
       - name: Run shellcheck
         run: |
           shellcheck \
-            src/install.sh \
+            install.sh \
             src/scripts/package.sh \
             src/scripts/fetch-kanata-binaries.sh \
             src/commands/linux/*.sh \
@@ -35,11 +35,12 @@ jobs:
             src/bin/kanata-tool \
             src/lib/paths.sh \
             src/lib/keymap.sh \
+            src/lib/update.sh \
             src/lib/linux-runtime.sh
 
       - name: Check shell syntax
         run: |
-          bash -n src/install.sh
+          bash -n install.sh
           bash -n src/scripts/package.sh
           bash -n src/scripts/fetch-kanata-binaries.sh
           bash -n src/commands/linux/setup.sh
@@ -48,12 +49,14 @@ jobs:
           bash -n src/commands/linux/start.sh
           bash -n src/commands/linux/status.sh
           bash -n src/commands/linux/stop.sh
+          bash -n src/commands/linux/update.sh
           bash -n src/commands/macos/setup.sh
           bash -n src/commands/macos/uninstall.sh
           bash -n src/commands/macos/device.sh
           bash -n src/commands/macos/start.sh
           bash -n src/commands/macos/status.sh
           bash -n src/commands/macos/stop.sh
+          bash -n src/commands/macos/update.sh
           bash -n src/bin/kanata-tool
 
   verify-powershell:
@@ -66,7 +69,7 @@ jobs:
         shell: pwsh
         run: |
           $files = @(
-            "src/install.ps1",
+            "install.ps1",
             "src/bin/kanata-tool.ps1",
             "src/lib/paths.ps1",
             "src/lib/keymap.ps1",
@@ -76,7 +79,8 @@ jobs:
             "src/commands/windows/keymap.ps1",
             "src/commands/windows/start.ps1",
             "src/commands/windows/status.ps1",
-            "src/commands/windows/stop.ps1"
+            "src/commands/windows/stop.ps1",
+            "src/commands/windows/update.ps1"
           )
           foreach ($file in $files) {
             [System.Management.Automation.Language.Parser]::ParseFile($file, [ref]$null, [ref]$null) | Out-Null
@@ -97,12 +101,27 @@ jobs:
           test -f "dist/kanata-tool-0.0.0-ci.tar.gz"
           test -f "dist/kanata-tool-0.0.0-ci.zip"
           test -f "dist/SHA256SUMS"
+          test -f "install.sh"
+          test -f "install.ps1"
 
       - name: Verify flat package layout
         run: |
-          tar -tzf dist/kanata-tool-0.0.0-ci.tar.gz | grep -q '^kanata-tool-0.0.0-ci/install.sh$'
-          tar -tzf dist/kanata-tool-0.0.0-ci.tar.gz | grep -q '^kanata-tool-0.0.0-ci/config/linux/kanata.kbd$'
-          ! tar -tzf dist/kanata-tool-0.0.0-ci.tar.gz | grep -q '^kanata-tool-0.0.0-ci/src/'
+          tar -tzf dist/kanata-tool-0.0.0-ci.tar.gz kanata-tool-0.0.0-ci/VERSION >/dev/null
+          tar -tzf dist/kanata-tool-0.0.0-ci.tar.gz kanata-tool-0.0.0-ci/config/linux/kanata.kbd >/dev/null
+          tar -tzf dist/kanata-tool-0.0.0-ci.tar.gz kanata-tool-0.0.0-ci/lib/update.sh >/dev/null
+          tar -tzf dist/kanata-tool-0.0.0-ci.tar.gz kanata-tool-0.0.0-ci/commands/linux/update.sh >/dev/null
+          tar -tzf dist/kanata-tool-0.0.0-ci.tar.gz kanata-tool-0.0.0-ci/commands/macos/update.sh >/dev/null
+          tar -tzf dist/kanata-tool-0.0.0-ci.tar.gz kanata-tool-0.0.0-ci/commands/windows/update.ps1 >/dev/null
+          ! tar -tzf dist/kanata-tool-0.0.0-ci.tar.gz kanata-tool-0.0.0-ci/install.sh >/dev/null 2>&1
+          ! tar -tzf dist/kanata-tool-0.0.0-ci.tar.gz kanata-tool-0.0.0-ci/install.ps1 >/dev/null 2>&1
+          ! tar -tzf dist/kanata-tool-0.0.0-ci.tar.gz kanata-tool-0.0.0-ci/src >/dev/null 2>&1
+          unzip -l dist/kanata-tool-0.0.0-ci.zip | grep -q 'kanata-tool-0.0.0-ci/VERSION'
+          unzip -l dist/kanata-tool-0.0.0-ci.zip | grep -q 'kanata-tool-0.0.0-ci/lib/update.sh'
+          unzip -l dist/kanata-tool-0.0.0-ci.zip | grep -q 'kanata-tool-0.0.0-ci/commands/linux/update.sh'
+          unzip -l dist/kanata-tool-0.0.0-ci.zip | grep -q 'kanata-tool-0.0.0-ci/commands/macos/update.sh'
+          unzip -l dist/kanata-tool-0.0.0-ci.zip | grep -q 'kanata-tool-0.0.0-ci/commands/windows/update.ps1'
+          ! unzip -l dist/kanata-tool-0.0.0-ci.zip | grep -q 'kanata-tool-0.0.0-ci/install.sh'
+          ! unzip -l dist/kanata-tool-0.0.0-ci.zip | grep -q 'kanata-tool-0.0.0-ci/install.ps1'
 
   release:
     name: Package and publish GitHub Release
@@ -119,8 +138,21 @@ jobs:
           test -f "dist/kanata-tool-${GITHUB_REF_NAME}.tar.gz"
           test -f "dist/kanata-tool-${GITHUB_REF_NAME}.zip"
           test -f "dist/SHA256SUMS"
-          tar -tzf "dist/kanata-tool-${GITHUB_REF_NAME}.tar.gz" | grep -q "^kanata-tool-${GITHUB_REF_NAME}/install.sh$"
-          ! tar -tzf "dist/kanata-tool-${GITHUB_REF_NAME}.tar.gz" | grep -q "^kanata-tool-${GITHUB_REF_NAME}/src/"
+          tar -tzf "dist/kanata-tool-${GITHUB_REF_NAME}.tar.gz" "kanata-tool-${GITHUB_REF_NAME}/VERSION" >/dev/null
+          tar -tzf "dist/kanata-tool-${GITHUB_REF_NAME}.tar.gz" "kanata-tool-${GITHUB_REF_NAME}/lib/update.sh" >/dev/null
+          tar -tzf "dist/kanata-tool-${GITHUB_REF_NAME}.tar.gz" "kanata-tool-${GITHUB_REF_NAME}/commands/linux/update.sh" >/dev/null
+          tar -tzf "dist/kanata-tool-${GITHUB_REF_NAME}.tar.gz" "kanata-tool-${GITHUB_REF_NAME}/commands/macos/update.sh" >/dev/null
+          tar -tzf "dist/kanata-tool-${GITHUB_REF_NAME}.tar.gz" "kanata-tool-${GITHUB_REF_NAME}/commands/windows/update.ps1" >/dev/null
+          ! tar -tzf "dist/kanata-tool-${GITHUB_REF_NAME}.tar.gz" "kanata-tool-${GITHUB_REF_NAME}/install.sh" >/dev/null 2>&1
+          ! tar -tzf "dist/kanata-tool-${GITHUB_REF_NAME}.tar.gz" "kanata-tool-${GITHUB_REF_NAME}/install.ps1" >/dev/null 2>&1
+          ! tar -tzf "dist/kanata-tool-${GITHUB_REF_NAME}.tar.gz" "kanata-tool-${GITHUB_REF_NAME}/src" >/dev/null 2>&1
+          unzip -l "dist/kanata-tool-${GITHUB_REF_NAME}.zip" | grep -q "kanata-tool-${GITHUB_REF_NAME}/VERSION"
+          unzip -l "dist/kanata-tool-${GITHUB_REF_NAME}.zip" | grep -q "kanata-tool-${GITHUB_REF_NAME}/lib/update.sh"
+          unzip -l "dist/kanata-tool-${GITHUB_REF_NAME}.zip" | grep -q "kanata-tool-${GITHUB_REF_NAME}/commands/linux/update.sh"
+          unzip -l "dist/kanata-tool-${GITHUB_REF_NAME}.zip" | grep -q "kanata-tool-${GITHUB_REF_NAME}/commands/macos/update.sh"
+          unzip -l "dist/kanata-tool-${GITHUB_REF_NAME}.zip" | grep -q "kanata-tool-${GITHUB_REF_NAME}/commands/windows/update.ps1"
+          ! unzip -l "dist/kanata-tool-${GITHUB_REF_NAME}.zip" | grep -q "kanata-tool-${GITHUB_REF_NAME}/install.sh"
+          ! unzip -l "dist/kanata-tool-${GITHUB_REF_NAME}.zip" | grep -q "kanata-tool-${GITHUB_REF_NAME}/install.ps1"
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
@@ -128,6 +160,8 @@ jobs:
           name: "kanata-tool ${{ github.ref_name }}"
           body: "kanata-tool release ${{ github.ref_name }}"
           files: |
+            install.sh
+            install.ps1
             dist/kanata-tool-${{ github.ref_name }}.tar.gz
             dist/kanata-tool-${{ github.ref_name }}.zip
             dist/SHA256SUMS

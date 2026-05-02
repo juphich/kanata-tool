@@ -27,6 +27,18 @@ function Show-Usage {
   Write-Host "  status     Show runtime and service status"
   Write-Host "  start      Start kanata service/agent/process"
   Write-Host "  stop       Stop kanata service/agent/process"
+  Write-Host "  update     Check for kanata-tool updates"
+  Write-Host "  version    Show installed kanata-tool version"
+}
+
+function Show-Version {
+  $versionFile = Join-Path $env:KANATA_TOOL_HOME "VERSION"
+  if (Test-Path $versionFile) {
+    Get-Content $versionFile -TotalCount 1
+    return
+  }
+
+  Write-Host "unknown"
 }
 
 if (-not $Args -or $Args.Count -lt 1) {
@@ -42,7 +54,12 @@ if ($Command -in @("-h", "--help", "help")) {
   exit 0
 }
 
-if ($Command -notin @("setup", "uninstall", "device", "keymap", "status", "start", "stop")) {
+if ($Command -eq "version") {
+  Show-Version
+  exit 0
+}
+
+if ($Command -notin @("setup", "uninstall", "device", "keymap", "status", "start", "stop", "update")) {
   Write-Error "Unknown command: $Command"
   Show-Usage
   exit 1

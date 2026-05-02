@@ -19,7 +19,19 @@ Commands:
   status     Show runtime and service status
   start      Start kanata service/agent
   stop       Stop kanata service/agent
+  update     Check for kanata-tool updates
+  version    Show installed kanata-tool version
 EOF
+}
+
+show_version() {
+  local version_file="${KANATA_TOOL_HOME}/VERSION"
+  if [[ -f "${version_file}" ]]; then
+    sed -n '1p' "${version_file}"
+    return 0
+  fi
+
+  printf 'unknown\n'
 }
 
 if [[ $# -lt 1 ]]; then
@@ -40,13 +52,16 @@ case "$(uname -s)" in
 esac
 
 case "${cmd}" in
+  version)
+    show_version
+    ;;
   uninstall)
     if [[ "${KANATA_TOOL_UNINSTALL_RUNTIME_ONLY:-0}" == "1" ]]; then
       exec bash "${COMMANDS_DIR}/${PLATFORM}/uninstall.sh" "$@"
     fi
     exec bash "${KANATA_TOOL_HOME}/install.sh" --uninstall "$@"
     ;;
-  setup|device|keymap|status|start|stop)
+  setup|device|keymap|status|start|stop|update)
     exec bash "${COMMANDS_DIR}/${PLATFORM}/${cmd}.sh" "$@"
     ;;
   -h|--help|help)
