@@ -9,8 +9,10 @@ MARKER="# added by kanata-tool installer"
 INSTALLER_SH="${BASH_SOURCE[0]:-}"
 if [[ -n "${INSTALLER_SH}" && -f "${INSTALLER_SH}" ]]; then
   SCRIPT_DIR="$(cd "$(dirname "${INSTALLER_SH}")" && pwd)"
+  PIPED_INSTALL=0
 else
   SCRIPT_DIR="$(pwd)"
+  PIPED_INSTALL=1
 fi
 INSTALLER_COPY_SOURCE="${INSTALLER_SH}"
 POWERSHELL_INSTALLER_COPY_SOURCE=""
@@ -200,6 +202,8 @@ parse_args() {
   if [[ -z "${SOURCE_DIR}" ]]; then
     if [[ -n "${BOOTSTRAP_VERSION}" ]]; then
       bootstrap_source_dir "${BOOTSTRAP_VERSION}"
+    elif [[ "${PIPED_INSTALL}" == "1" ]]; then
+      bootstrap_source_dir ""
     else
       detect_default_source_dir || bootstrap_source_dir ""
     fi
