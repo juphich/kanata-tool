@@ -210,11 +210,20 @@ bash src/scripts/package.sh 1.2.3
 
 ### Linux
 
-- `/dev/input/*` 접근을 위해 `input` 그룹이 필요할 수 있습니다.
+- 설치 시 `/dev/input/event*`, `/dev/uinput` 접근을 위한 udev rule과 `input`/`uinput` 그룹 권한을 자동 설정합니다.
+- 사용자가 새 그룹에 추가된 경우 현재 로그인 세션에는 즉시 반영되지 않을 수 있습니다. 이때는 로그아웃 후 다시 로그인하거나 재부팅한 뒤 `kanata-tool start`를 실행하세요.
 
 ```bash
-sudo usermod -aG input "$USER"
+kanata-tool status
+kanata-tool start
 ```
+
+생성되는 시스템 권한 파일:
+
+- `/etc/udev/rules.d/99-kanata-tool.rules`
+- `/etc/modules-load.d/uinput.conf`
+
+`kanata-tool uninstall`은 위 파일을 제거하지만, 기존 `input`/`uinput` 그룹과 사용자 그룹 멤버십은 다른 프로그램에서 사용할 수 있으므로 제거하지 않습니다.
 
 ### macOS
 

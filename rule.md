@@ -53,7 +53,9 @@
 
 ### Linux
 
-- `/dev/input/*` 접근을 위해 `input` 그룹이 필요할 수 있다.
+- 설치 시 `/dev/input/event*`, `/dev/uinput` 접근을 위한 udev rule과 `input`/`uinput` 그룹 권한을 자동 설정한다.
+- 새 그룹 멤버십이 생긴 경우 현재 로그인 세션에는 즉시 반영되지 않을 수 있으므로 서비스 시작을 다음 로그인 이후로 미룰 수 있다.
+- uninstall은 kanata-tool이 생성한 udev rule과 modules-load 파일을 제거한다. 그룹과 사용자 그룹 멤버십은 다른 프로그램에 영향을 줄 수 있으므로 제거하지 않는다.
 - `systemctl --user`가 usable하지 않으면 autostart는 건너뛸 수 있다.
 
 ### macOS
