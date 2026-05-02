@@ -6,8 +6,12 @@ BIN_DIR="${HOME}/.local/bin"
 CLI_WRAPPER="${BIN_DIR}/kanata-tool"
 INIT_SCRIPT="${INSTALL_ROOT}/init.sh"
 MARKER="# added by kanata-tool installer"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-INSTALLER_SH="${BASH_SOURCE[0]}"
+INSTALLER_SH="${BASH_SOURCE[0]:-}"
+if [[ -n "${INSTALLER_SH}" && -f "${INSTALLER_SH}" ]]; then
+  SCRIPT_DIR="$(cd "$(dirname "${INSTALLER_SH}")" && pwd)"
+else
+  SCRIPT_DIR="$(pwd)"
+fi
 INSTALLER_COPY_SOURCE="${INSTALLER_SH}"
 POWERSHELL_INSTALLER_COPY_SOURCE=""
 SOURCE_DIR=""
