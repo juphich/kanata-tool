@@ -8,6 +8,7 @@ source "${SCRIPT_DIR}/../../lib/paths.sh"
 source "${SCRIPT_DIR}/../../lib/keymap.sh"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/../../lib/device.sh"
+# shellcheck disable=SC2034
 KANATA_RUN_PREFIX="sudo"
 
 usage() {
